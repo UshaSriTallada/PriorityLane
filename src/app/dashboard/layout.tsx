@@ -63,10 +63,8 @@ function StateManager({ children }: { children: ReactNode }) {
     }, [divisions]);
 
     const handleUpdateDivision = useCallback((oldName: string, newName: string) => {
-        // Update the division list
         setDivisions(prev => prev.map(d => (d === oldName ? (newName as Task['division']) : d)));
         
-        // Update the tasks that were in the old division
         setTasks(prevTasks => prevTasks.map(task => {
             if (task.division === oldName) {
                 return { ...task, division: newName as Task['division'] };
@@ -79,8 +77,6 @@ function StateManager({ children }: { children: ReactNode }) {
 
     const handleDeleteDivision = useCallback((name: string) => {
         setDivisions(prev => prev.filter(d => d !== name));
-        // Note: We are not deleting tasks, they will just be un-categorized
-        // A real app might reassign them or prompt the user.
         router.push('/dashboard');
     }, [router]);
 
@@ -111,25 +107,29 @@ function StateManager({ children }: { children: ReactNode }) {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
-        <StateManager>
-            <SidebarProvider>
-                <Sidebar>
-                    <SidebarHeader>
-                        <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                                <Factory className="h-6 w-6 text-primary" />
-                                <span className="group-data-[collapsible=icon]:hidden">FactoryFlow</span>
-                            </Link>
-                        </div>
-                    </SidebarHeader>
-                    <SidebarContent className="p-2">
+        <SidebarProvider>
+            <Sidebar>
+                <SidebarHeader>
+                    <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                            <Factory className="h-6 w-6 text-primary" />
+                            <span className="group-data-[collapsible=icon]:hidden">FactoryFlow</span>
+                        </Link>
+                    </div>
+                </SidebarHeader>
+                <SidebarContent className="p-2">
+                    {/* StateManager only needs to wrap MainNav for the division context */}
+                    <StateManager>
                         <MainNav />
-                    </SidebarContent>
-                </Sidebar>
-                <SidebarInset>
+                    </StateManager>
+                </SidebarContent>
+            </Sidebar>
+            <SidebarInset>
+                 {/* And the main content area */}
+                <StateManager>
                     {children}
-                </SidebarInset>
-            </SidebarProvider>
-        </StateManager>
+                </StateManager>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }
