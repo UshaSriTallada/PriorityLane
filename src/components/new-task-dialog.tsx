@@ -37,6 +37,7 @@ import { CalendarIcon, PlusCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task } from "@/types";
+import { useDivisions } from "@/hooks/use-divisions";
 
 const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
 
@@ -51,11 +52,12 @@ const taskSchema = z.object({
 
 interface NewTaskDialogProps {
   onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
-  divisions: Task['division'][];
 }
 
-export function NewTaskDialog({ onTaskCreate, divisions }: NewTaskDialogProps) {
+export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
   const [open, setOpen] = useState(false);
+  const { divisions } = useDivisions();
+
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema.extend({
         division: z.enum(divisions as [string, ...string[]], {
@@ -70,6 +72,17 @@ export function NewTaskDialog({ onTaskCreate, divisions }: NewTaskDialogProps) {
       impact: "Medium",
     },
   });
+
+  // Keep defaultValues in sync with divisions
+  useState(() => {
+    form.reset({
+      name: "",
+      description: "",
+      division: divisions[0],
+      assigneeName: "",
+      impact: "Medium",
+    })
+  }, [divisions, form])
 
   function onSubmit(values: z.infer<typeof taskSchema>) {
     onTaskCreate({
@@ -134,7 +147,7 @@ export function NewTaskDialog({ onTaskCreate, divisions }: NewTaskDialogProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Division</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a division" />

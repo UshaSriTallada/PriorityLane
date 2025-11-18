@@ -16,14 +16,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Task } from '@/types';
+import { useDivisions } from '@/hooks/use-divisions';
 
-interface MainNavProps {
-  divisions: Task['division'][];
-  onDivisionCreate: (name: string) => void;
-}
 
-function AddDivisionDialog({ onDivisionCreate, divisions }: { onDivisionCreate: (name: string) => void; divisions: string[] }) {
+function AddDivisionDialog() {
+    const { onDivisionCreate, divisions } = useDivisions();
     const [open, setOpen] = React.useState(false);
     const [name, setName] = React.useState('');
     const [error, setError] = React.useState('');
@@ -91,8 +88,9 @@ function AddDivisionDialog({ onDivisionCreate, divisions }: { onDivisionCreate: 
 }
 
 
-export default function MainNav({ divisions, onDivisionCreate }: MainNavProps) {
+export default function MainNav() {
   const pathname = usePathname();
+  const { divisions } = useDivisions();
 
   return (
     <>
@@ -123,7 +121,7 @@ export default function MainNav({ divisions, onDivisionCreate }: MainNavProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
-          <AddDivisionDialog onDivisionCreate={onDivisionCreate} divisions={divisions} />
+          <AddDivisionDialog />
         </SidebarMenu>
       </SidebarGroup>
     </>

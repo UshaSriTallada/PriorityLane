@@ -14,11 +14,10 @@ import { isPast } from 'date-fns';
 interface DashboardClientProps {
   initialTasks: Task[];
   divisions: Task['division'][];
-  onDivisionCreate: (name: string) => void;
   selectedDivision?: string;
 }
 
-export default function DashboardClient({ initialTasks, divisions, onDivisionCreate, selectedDivision }: DashboardClientProps) {
+export default function DashboardClient({ initialTasks, divisions, selectedDivision }: DashboardClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -121,7 +120,7 @@ export default function DashboardClient({ initialTasks, divisions, onDivisionCre
                 )}
                 Prioritize with AI
               </Button>
-              <NewTaskDialog onTaskCreate={handleTaskCreate} divisions={divisions} />
+              <NewTaskDialog onTaskCreate={handleTaskCreate} />
             </div>
           </div>
 
