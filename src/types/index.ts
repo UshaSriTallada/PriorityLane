@@ -1,9 +1,16 @@
+
+export type Assignee = {
+  name: string;
+  avatarUrl: string;
+};
+
 export type Subtask = {
   id: string;
   name: string;
   description: string;
   deadline: string;
   completed: boolean;
+  assignee?: Assignee;
 };
 
 export type Task = {
@@ -13,10 +20,7 @@ export type Task = {
   deadline: string;
   dependencies: string[];
   division: 'Operations' | 'Processing' | 'Production' | 'Maintenance' | 'Logistics';
-  assignee: {
-    name: string;
-    avatarUrl: string;
-  };
+  owner: Assignee;
   impact: 'High' | 'Medium' | 'Low';
   subtasks: Subtask[];
   priority?: number;

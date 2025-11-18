@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon, PlusCircle, Trash2 } from "lucide-react";
+import { CalendarIcon, PlusCircle, Trash2, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task, Subtask } from "@/types";
@@ -44,7 +45,7 @@ const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
   description: z.string().optional(),
   division: z.string().min(1, { message: "Please select a division" }),
-  assigneeName: z.string().min(2, { message: "Assignee name is required." }),
+  ownerName: z.string().min(2, { message: "Owner name is required." }),
   impact: z.enum(impacts),
   deadline: z.date({ required_error: "A deadline is required." }),
 });
@@ -69,7 +70,7 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       name: task.name,
       description: task.description,
       division: task.division,
-      assigneeName: task.assignee.name,
+      ownerName: task.owner.name,
       impact: task.impact,
       deadline: new Date(task.deadline),
     },
@@ -81,7 +82,7 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       name: values.name,
       description: values.description || "",
       division: values.division as Task['division'],
-      assignee: { ...task.assignee, name: values.assigneeName },
+      owner: { ...task.owner, name: values.ownerName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),
       subtasks: subtasks
@@ -106,6 +107,20 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
     newSubtasks[index][field] = value;
     setSubtasks(newSubtasks);
   };
+  
+  const handleSubtaskAssigneeChange = (index: number, name: string) => {
+    const newSubtasks = [...subtasks];
+    if (name) {
+        newSubtasks[index].assignee = {
+            name: name,
+            avatarUrl: `https://picsum.photos/seed/${Math.random()}/32/32`,
+        }
+    } else {
+        delete newSubtasks[index].assignee;
+    }
+    setSubtasks(newSubtasks);
+  }
+
 
   const handleSubtaskDateChange = (index: number, date: Date | undefined) => {
       if(date) {
@@ -151,7 +166,7 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add a detailed description for the assignee..." className="resize-none" {...field} />
+                    <Textarea placeholder="Add a detailed description for the owner..." className="resize-none" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -180,10 +195,10 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
               />
               <FormField
                 control={form.control}
-                name="assigneeName"
+                name="ownerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assignee</FormLabel>
+                    <FormLabel>Owner</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., John Doe" {...field} />
                     </FormControl>
@@ -264,14 +279,14 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
                 <div className="space-y-4">
                 {subtasks.map((subtask, index) => (
                     <div key={subtask.id} className="grid gap-3 p-3 border rounded-lg">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between items-start gap-2">
                             <Input
                                 value={subtask.name}
                                 onChange={(e) => handleSubtaskChange(index, 'name', e.target.value)}
                                 placeholder="Subtask name"
                                 className="font-medium flex-1"
                             />
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveSubtask(subtask.id)}>
+                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleRemoveSubtask(subtask.id)}>
                                 <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                         </div>
@@ -281,28 +296,39 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
                             placeholder="Subtask description"
                             className="resize-none"
                         />
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant={"outline"}
-                                    className={cn(
-                                    "pl-3 text-left font-normal",
-                                    !subtask.deadline && "text-muted-foreground"
-                                    )}
-                                >
-                                    {subtask.deadline ? format(new Date(subtask.deadline), "PPP") : <span>Pick a date</span>}
-                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar
-                                    mode="single"
-                                    selected={new Date(subtask.deadline)}
-                                    onSelect={(date) => handleSubtaskDateChange(index, date)}
-                                    initialFocus
+                        <div className="grid grid-cols-2 gap-4">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant={"outline"}
+                                        className={cn(
+                                        "pl-3 text-left font-normal",
+                                        !subtask.deadline && "text-muted-foreground"
+                                        )}
+                                    >
+                                        {subtask.deadline ? format(new Date(subtask.deadline), "PPP") : <span>Pick a date</span>}
+                                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={new Date(subtask.deadline)}
+                                        onSelect={(date) => handleSubtaskDateChange(index, date)}
+                                        initialFocus
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                             <div className="relative">
+                                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    value={subtask.assignee?.name || ''}
+                                    onChange={(e) => handleSubtaskAssigneeChange(index, e.target.value)}
+                                    placeholder="Assignee"
+                                    className="pl-9"
                                 />
-                            </PopoverContent>
-                        </Popover>
+                            </div>
+                        </div>
                     </div>
                 ))}
                 </div>

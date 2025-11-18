@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useMemo, useEffect } from "react";
@@ -82,14 +83,14 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     });
   };
 
-  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => {
+  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason'>) => {
     const newTask: Task = {
         ...newTaskData,
         id: `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
         subtasks: [],
         dependencies: [],
-        assignee: {
-            ...newTaskData.assignee,
+        owner: {
+            ...newTaskData.owner,
             avatarUrl: `https://picsum.photos/seed/${Math.random()}/32/32`,
         }
     };

@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -45,13 +46,13 @@ const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
   description: z.string().optional(),
   division: z.string().min(1, { message: "Please select a division" }),
-  assigneeName: z.string().min(2, { message: "Assignee name is required." }),
+  ownerName: z.string().min(2, { message: "Owner name is required." }),
   impact: z.enum(impacts),
   deadline: z.date({ required_error: "A deadline is required." }),
 });
 
 interface NewTaskDialogProps {
-  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason'> & { owner: { name: string } }) => void;
 }
 
 export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
@@ -68,28 +69,27 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
       name: "",
       description: "",
       division: divisions[0],
-      assigneeName: "",
+      ownerName: "",
       impact: "Medium",
     },
   });
 
   // Keep defaultValues in sync with divisions
-  useState(() => {
-    form.reset({
-      name: "",
-      description: "",
-      division: divisions[0],
-      assigneeName: "",
-      impact: "Medium",
-    })
-  }, [divisions, form])
+  useEffect(() => {
+    if (!form.getValues('division') && divisions.length > 0) {
+        form.reset({
+            ...form.getValues(),
+            division: divisions[0],
+        });
+    }
+  }, [divisions, form]);
 
   function onSubmit(values: z.infer<typeof taskSchema>) {
     onTaskCreate({
       name: values.name,
       description: values.description || "",
       division: values.division as Task['division'],
-      assignee: { name: values.assigneeName },
+      owner: { name: values.ownerName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),
     });
@@ -134,7 +134,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add a detailed description for the assignee..." className="resize-none" {...field} />
+                    <Textarea placeholder="Add a detailed description for the owner..." className="resize-none" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -163,10 +163,10 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
               />
               <FormField
                 control={form.control}
-                name="assigneeName"
+                name="ownerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Assignee</FormLabel>
+                    <FormLabel>Owner</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., John Doe" {...field} />
                     </FormControl>

@@ -1,3 +1,4 @@
+
 import { Task } from "@/types";
 import {
   Card,
@@ -14,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { format, isPast } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit } from "lucide-react";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 
@@ -81,19 +82,10 @@ export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
                 <span>{format(new Date(task.deadline), "MMM d, yyyy")}</span>
                  {isTaskOverdue && <Badge variant="destructive" className="animate-pulse">OVERDUE</Badge>}
             </div>
-            <TooltipProvider>
-                <Tooltip>
-                    <TooltipTrigger>
-                        <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                                <AvatarImage src={task.assignee.avatarUrl} alt={task.assignee.name} />
-                                <AvatarFallback>{task.assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                            </Avatar>
-                        </div>
-                    </TooltipTrigger>
-                    <TooltipContent>Assigned to {task.assignee.name}</TooltipContent>
-                </Tooltip>
-            </TooltipProvider>
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <span>{task.owner.name}</span>
+            </div>
         </div>
         
         {task.subtasks.length > 0 && (
@@ -127,10 +119,27 @@ export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
                                     {subtask.name}
                                 </label>
                                 <p className="text-sm text-muted-foreground">{subtask.description}</p>
-                                <div className={cn("text-xs text-muted-foreground flex items-center", isSubtaskOverdue && "text-destructive font-semibold")}>
-                                    <Clock className="h-3 w-3 mr-1"/>
-                                    Deadline: {format(new Date(subtask.deadline), "MMM d")}
-                                    {isSubtaskOverdue && <span className="ml-2">(Overdue)</span>}
+                                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <div className={cn("flex items-center", isSubtaskOverdue && "text-destructive font-semibold")}>
+                                        <Clock className="h-3 w-3 mr-1"/>
+                                        Deadline: {format(new Date(subtask.deadline), "MMM d")}
+                                        {isSubtaskOverdue && <span className="ml-2">(Overdue)</span>}
+                                    </div>
+                                    {subtask.assignee && (
+                                        <div className="flex items-center gap-1.5">
+                                             <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger>
+                                                        <Avatar className="h-5 w-5">
+                                                            <AvatarImage src={subtask.assignee.avatarUrl} alt={subtask.assignee.name} />
+                                                            <AvatarFallback>{subtask.assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                                        </Avatar>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent><p>{subtask.assignee.name}</p></TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </li>
