@@ -9,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -126,18 +125,9 @@ export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
                                         {isSubtaskOverdue && <span className="ml-2">(Overdue)</span>}
                                     </div>
                                     {subtask.assignee && (
-                                        <div className="flex items-center gap-1.5">
-                                             <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger>
-                                                        <Avatar className="h-5 w-5">
-                                                            <AvatarImage src={subtask.assignee.avatarUrl} alt={subtask.assignee.name} />
-                                                            <AvatarFallback>{subtask.assignee.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                                                        </Avatar>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent><p>{subtask.assignee.name}</p></TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
+                                        <div className="flex items-center gap-1.5 font-medium text-foreground">
+                                            <User className="h-3 w-3 text-muted-foreground"/>
+                                            <span>{subtask.assignee.name}</span>
                                         </div>
                                     )}
                                 </div>
