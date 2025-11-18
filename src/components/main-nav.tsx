@@ -8,6 +8,7 @@ import {
   SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
+  SidebarMenuAction,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
 import * as React from 'react';
@@ -134,10 +135,10 @@ function DivisionActions({ divisionName }: { divisionName: string }) {
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto group-data-[collapsible=icon]:hidden">
-                        <MoreVertical className="h-4 w-4" />
+                    <SidebarMenuAction showOnHover>
+                        <MoreVertical />
                         <span className="sr-only">Division Actions</span>
-                    </Button>
+                    </SidebarMenuAction>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
@@ -225,16 +226,13 @@ export default function MainNav() {
                 asChild
                 isActive={pathname === `/dashboard/${division.toLowerCase()}`}
                 tooltip={division}
-                className="flex justify-between items-center"
               >
-                <Link href={`/dashboard/${division.toLowerCase()}`} className="flex items-center gap-2 flex-1 overflow-hidden">
+                <Link href={`/dashboard/${division.toLowerCase()}`}>
                   <Users />
                   <span className="group-data-[collapsible=icon]:hidden truncate">{division}</span>
                 </Link>
               </SidebarMenuButton>
-              <div className="absolute right-1 top-1/2 -translate-y-1/2">
-                <DivisionActions divisionName={division} />
-              </div>
+              <DivisionActions divisionName={division} />
             </SidebarMenuItem>
           ))}
           <AddDivisionDialog />
