@@ -1,6 +1,5 @@
 'use client';
 import DashboardClient from '@/components/dashboard-client';
-import { use } from 'react';
 import { useDivisions } from '@/hooks/use-divisions';
 
 interface DivisionDashboardPageProps {
@@ -10,9 +9,8 @@ interface DivisionDashboardPageProps {
 
 export default function DivisionDashboardPage({ params }: DivisionDashboardPageProps) {
     const { divisions } = useDivisions();
-    const resolvedParams = use(Promise.resolve(params));
   
-    const decodedDivision = decodeURIComponent(resolvedParams.division);
+    const decodedDivision = decodeURIComponent(params.division);
     const divisionExists = divisions.map(d => d.toLowerCase()).includes(decodedDivision);
 
     const getDivisionDisplayName = (slug: string) => {
