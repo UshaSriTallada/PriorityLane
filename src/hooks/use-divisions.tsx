@@ -1,28 +1,26 @@
 'use client';
-import { Task } from "@/types";
-import { createContext, useContext, ReactNode } from "react";
+import { ReactNode } from "react";
+import { useStateManager } from "./use-state-manager";
 
-interface DivisionContextType {
-    divisions: Task['division'][];
-    onDivisionCreate: (name: string) => void;
-    onDivisionUpdate: (oldName: string, newName: string) => void;
-    onDivisionDelete: (name: string) => void;
+// Note: The DivisionProvider and its context are no longer needed as state is centralized
+// in StateProvider. This hook now acts as a convenient wrapper around useStateManager
+// to provide just the division-related state and functions.
+
+/**
+ * @deprecated The DivisionProvider is no longer used. State is managed by StateProvider.
+ */
+export function DivisionProvider({ children }: { children: ReactNode }) {
+    // This provider is deprecated and now just passes through its children.
+    // The actual state is managed by StateProvider in the root layout.
+    return <>{children}</>;
 }
 
-const DivisionContext = createContext<DivisionContextType | undefined>(undefined);
-
-export function DivisionProvider({ children, divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete }: { children: ReactNode } & DivisionContextType) {
-    return (
-        <DivisionContext.Provider value={{ divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete }}>
-            {children}
-        </DivisionContext.Provider>
-    );
-}
-
+/**
+ * A hook to access division-related state and actions.
+ * It must be used within a component tree wrapped by `StateProvider`.
+ */
 export function useDivisions() {
-    const context = useContext(DivisionContext);
-    if (context === undefined) {
-        throw new Error('useDivisions must be used within a DivisionProvider');
-    }
-    return context;
+    // The useDivisions hook now gets its state from the centralized useStateManager.
+    const { divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete } = useStateManager();
+    return { divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete };
 }

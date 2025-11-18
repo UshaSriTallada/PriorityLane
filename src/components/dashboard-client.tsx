@@ -11,23 +11,20 @@ import { EditTaskDialog } from "@/components/edit-task-dialog";
 import { getTaskPriorities } from "@/app/actions";
 import type { Task } from "@/types";
 import { isPast } from 'date-fns';
+import { useStateManager } from "@/hooks/use-state-manager";
 
 interface DashboardClientProps {
-  tasks: Task[];
-  divisions: Task['division'][];
   selectedDivision?: string;
-  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
-  onTaskUpdate: (updatedTask: Task) => void;
-  onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
 }
 
-export default function DashboardClient({ tasks, divisions, selectedDivision, onTaskCreate, onTaskUpdate, onSubtaskChange }: DashboardClientProps) {
+export default function DashboardClient({ selectedDivision }: DashboardClientProps) {
+  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange } = useStateManager();
   const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks || []);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
-  // Keep the state in sync with props
+  // Keep the state in sync with context
   useEffect(() => {
     setCurrentTasks(tasks || []);
   }, [tasks]);
