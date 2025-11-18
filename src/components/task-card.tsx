@@ -14,12 +14,14 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { format, isPast } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users } from "lucide-react";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "./ui/button";
 
 interface TaskCardProps {
   task: Task;
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
+  onEdit: (task: Task) => void;
 }
 
 const impactVariantMap: Record<Task['impact'], 'destructive' | 'secondary' | 'outline'> = {
@@ -36,10 +38,10 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
   const isTaskOverdue = isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
-  const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : task.subtasks.length === 0 ? 0 : 0;
+  const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0;
 
   return (
     <Card className={cn(isTaskOverdue && "border-destructive/50 ring-1 ring-destructive/20", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col")}>
@@ -49,21 +51,27 @@ export function TaskCard({ task, onSubtaskChange }: TaskCardProps) {
                  <CardTitle className="text-lg font-semibold leading-tight">{task.name}</CardTitle>
                 <CardDescription className="mt-1 line-clamp-2">{task.description}</CardDescription>
             </div>
-            {task.priority !== undefined && (
-                <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5 text-accent-foreground/80 font-bold bg-accent/10 rounded-full px-3 py-1">
-                                <Sparkles className="h-4 w-4 text-accent" />
-                                <span className="text-lg">{task.priority}</span>
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="end">
-                            <p className="max-w-xs text-sm"><strong>AI Priority Reason:</strong> {task.priorityReason}</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            )}
+            <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(task)}>
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Edit Task</span>
+                </Button>
+                {task.priority !== undefined && (
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1.5 text-accent-foreground/80 font-bold bg-accent/10 rounded-full px-3 py-1">
+                                    <Sparkles className="h-4 w-4 text-accent" />
+                                    <span className="text-lg">{task.priority}</span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" align="end">
+                                <p className="max-w-xs text-sm"><strong>AI Priority Reason:</strong> {task.priorityReason}</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
+            </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -135,7 +143,7 @@ export function TaskCard({ task, onSubtaskChange }: TaskCardProps) {
         )}
       </CardContent>
       <CardFooter className="mt-auto flex justify-start gap-2 pt-4">
-        <Badge className={cn(divisionColorMap[task.division])}><Users className="h-3 w-3 mr-1.5"/>{task.division}</Badge>
+        <Badge className={cn(divisionColorMap[task.division] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border-gray-200 dark:border-gray-700')}><Users className="h-3 w-3 mr-1.5"/>{task.division}</Badge>
         <Badge variant={impactVariantMap[task.impact]}><ShieldAlert className="h-3 w-3 mr-1.5"/>{task.impact}</Badge>
       </CardFooter>
     </Card>

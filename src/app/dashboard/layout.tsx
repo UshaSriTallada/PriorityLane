@@ -13,22 +13,40 @@ import { useState, useCallback } from 'react';
 import type { Task } from '@/types';
 import { initialTasks } from '@/lib/data';
 import { DivisionProvider } from '@/hooks/use-divisions';
+import { useRouter } from 'next/navigation';
 
 const initialDivisions = Array.from(new Set(initialTasks.map(task => task.division)));
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [divisions, setDivisions] = useState<Task['division'][]>(initialDivisions);
+  const router = useRouter();
   
   const handleAddDivision = useCallback((name: string) => {
-    // This is a simple client-side update. In a real app, this would
-    // likely involve an API call to persist the new division.
     if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
         setDivisions(prev => [...prev, name as Task['division']]);
     }
   }, [divisions]);
 
+  const handleUpdateDivision = useCallback((oldName: string, newName: string) => {
+    setDivisions(prev => prev.map(d => (d === oldName ? (newName as Task['division']) : d)));
+    // In a real app, you'd also need to update all tasks under this division.
+    // For now, we'll redirect to the new division page.
+    router.push(`/dashboard/${newName.toLowerCase()}`);
+  }, [router]);
+
+  const handleDeleteDivision = useCallback((name: string) => {
+    setDivisions(prev => prev.filter(d => d !== name));
+     // In a real app, you might want to reassign or delete tasks under this division.
+    router.push('/dashboard');
+  }, [router]);
+
   return (
-    <DivisionProvider divisions={divisions} onDivisionCreate={handleAddDivision}>
+    <DivisionProvider 
+      divisions={divisions} 
+      onDivisionCreate={handleAddDivision}
+      onDivisionUpdate={handleUpdateDivision}
+      onDivisionDelete={handleDeleteDivision}
+    >
       <SidebarProvider>
         <Sidebar>
           <SidebarHeader>

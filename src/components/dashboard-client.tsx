@@ -7,8 +7,9 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
 import { TaskCard } from "@/components/task-card";
 import { NewTaskDialog } from "@/components/new-task-dialog";
+import { EditTaskDialog } from "@/components/edit-task-dialog";
 import { getTaskPriorities } from "@/app/actions";
-import type { Task } from "@/types";
+import type { Task, Subtask } from "@/types";
 import { isPast } from 'date-fns';
 
 interface DashboardClientProps {
@@ -21,6 +22,7 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   const filteredTasks = useMemo(() => {
     if (!selectedDivision) return tasks;
@@ -84,6 +86,15 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
     });
   };
 
+  const handleTaskUpdate = (updatedTask: Task) => {
+    setTasks(prevTasks => prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+    setEditingTask(null);
+    toast({
+        title: "Task Updated",
+        description: `"${updatedTask.name}" has been successfully updated.`,
+    });
+  };
+
   const handleSubtaskChange = (taskId: string, subtaskId: string, completed: boolean) => {
     setTasks(prevTasks => prevTasks.map(task => {
         if (task.id === taskId) {
@@ -102,42 +113,51 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
   const pageDescription = selectedDivision ? `Tasks for the ${selectedDivision} division.` : "Manage and prioritize your factory's workload.";
 
   return (
-    <div className="flex h-screen flex-col">
-      <Header overdueCount={overdueCount} />
-      <div className="flex-1 overflow-y-auto">
-        <main className="p-4 md:p-6 lg:p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
-                <p className="text-muted-foreground">{pageDescription}</p>
+    <>
+      <div className="flex h-screen flex-col">
+        <Header overdueCount={overdueCount} />
+        <div className="flex-1 overflow-y-auto">
+          <main className="p-4 md:p-6 lg:p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                  <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
+                  <p className="text-muted-foreground">{pageDescription}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={handlePrioritize} disabled={isPending}>
+                  {isPending ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4 text-accent" />
+                  )}
+                  Prioritize with AI
+                </Button>
+                <NewTaskDialog onTaskCreate={handleTaskCreate} />
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handlePrioritize} disabled={isPending}>
-                {isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4 text-accent" />
-                )}
-                Prioritize with AI
-              </Button>
-              <NewTaskDialog onTaskCreate={handleTaskCreate} />
-            </div>
-          </div>
 
-          {filteredTasks.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {filteredTasks.map((task) => (
-                    <TaskCard key={task.id} task={task} onSubtaskChange={handleSubtaskChange} />
-                ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-                <h3 className="text-xl font-semibold">No tasks yet</h3>
-                <p className="text-muted-foreground mt-2">{selectedDivision ? `No tasks found for the ${selectedDivision} division.` : "Create your first task to get started."}</p>
-            </div>
-          )}
-        </main>
+            {filteredTasks.length > 0 ? (
+              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {filteredTasks.map((task) => (
+                      <TaskCard key={task.id} task={task} onSubtaskChange={handleSubtaskChange} onEdit={() => setEditingTask(task)} />
+                  ))}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
+                  <h3 className="text-xl font-semibold">No tasks yet</h3>
+                  <p className="text-muted-foreground mt-2">{selectedDivision ? `No tasks found for the ${selectedDivision} division.` : "Create your first task to get started."}</p>
+              </div>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+      {editingTask && (
+        <EditTaskDialog
+            task={editingTask}
+            onTaskUpdate={handleTaskUpdate}
+            onOpenChange={(open) => !open && setEditingTask(null)}
+        />
+      )}
+    </>
   );
 }

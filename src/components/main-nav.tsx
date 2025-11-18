@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { ClipboardList, Users, PlusCircle } from 'lucide-react';
+import { ClipboardList, Users, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -17,6 +17,8 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useDivisions } from '@/hooks/use-divisions';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from './ui/alert-dialog';
 
 
 function AddDivisionDialog() {
@@ -47,7 +49,13 @@ function AddDivisionDialog() {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            if (!isOpen) {
+                setError('');
+                setName('');
+            }
+        }}>
             <SidebarMenuItem>
                  <SidebarMenuButton asChild={false} onClick={() => setOpen(true)} className="w-full justify-start">
                     <PlusCircle />
@@ -87,6 +95,110 @@ function AddDivisionDialog() {
     );
 }
 
+function DivisionActions({ divisionName }: { divisionName: string }) {
+    const { onDivisionUpdate, onDivisionDelete, divisions } = useDivisions();
+    const [isEditDialogOpen, setIsEditDialogOpen] = React.useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+    const [newName, setNewName] = React.useState(divisionName);
+    const [error, setError] = React.useState('');
+    const { toast } = useToast();
+
+    const handleUpdate = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newName.trim()) {
+            setError('Division name cannot be empty.');
+            return;
+        }
+        if (newName.trim().toLowerCase() !== divisionName.toLowerCase() && divisions.map(d => d.toLowerCase()).includes(newName.trim().toLowerCase())) {
+            setError('This division already exists.');
+            return;
+        }
+        onDivisionUpdate(divisionName, newName.trim());
+        toast({
+            title: "Division Updated",
+            description: `"${divisionName}" was renamed to "${newName.trim()}".`
+        });
+        setIsEditDialogOpen(false);
+    };
+    
+    const handleDelete = () => {
+        onDivisionDelete(divisionName);
+        toast({
+            title: "Division Deleted",
+            description: `The "${divisionName}" division has been removed.`
+        });
+        setIsDeleteDialogOpen(false);
+    };
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto group-data-[collapsible=icon]:hidden">
+                        <MoreVertical className="h-4 w-4" />
+                        <span className="sr-only">Division Actions</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Rename
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsDeleteDialogOpen(true)} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Edit Dialog */}
+            <Dialog open={isEditDialogOpen} onOpenChange={(isOpen) => {
+                setIsEditDialogOpen(isOpen);
+                if (!isOpen) {
+                    setError('');
+                    setNewName(divisionName);
+                }
+            }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Rename Division</DialogTitle>
+                        <DialogDescription>Enter the new name for the "{divisionName}" division.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleUpdate}>
+                        <div className="grid gap-4 py-4">
+                            <Label htmlFor="new-division-name">New Name</Label>
+                            <Input id="new-division-name" value={newName} onChange={(e) => {
+                                setNewName(e.target.value);
+                                setError('');
+                            }}/>
+                            {error && <p className="text-sm text-destructive">{error}</p>}
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit">Save Changes</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the "{divisionName}" division. This action cannot be undone. Any tasks in this division will need to be reassigned.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+}
+
 
 export default function MainNav() {
   const pathname = usePathname();
@@ -113,12 +225,16 @@ export default function MainNav() {
                 asChild
                 isActive={pathname === `/dashboard/${division.toLowerCase()}`}
                 tooltip={division}
+                className="flex justify-between items-center"
               >
-                <Link href={`/dashboard/${division.toLowerCase()}`}>
+                <Link href={`/dashboard/${division.toLowerCase()}`} className="flex items-center gap-2 flex-1 overflow-hidden">
                   <Users />
-                  <span className="group-data-[collapsible=icon]:hidden">{division}</span>
+                  <span className="group-data-[collapsible=icon]:hidden truncate">{division}</span>
                 </Link>
               </SidebarMenuButton>
+              <div className="absolute right-1 top-1/2 -translate-y-1/2">
+                <DivisionActions divisionName={division} />
+              </div>
             </SidebarMenuItem>
           ))}
           <AddDivisionDialog />

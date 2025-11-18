@@ -5,13 +5,15 @@ import { createContext, useContext, ReactNode } from "react";
 interface DivisionContextType {
     divisions: Task['division'][];
     onDivisionCreate: (name: string) => void;
+    onDivisionUpdate: (oldName: string, newName: string) => void;
+    onDivisionDelete: (name: string) => void;
 }
 
 const DivisionContext = createContext<DivisionContextType | undefined>(undefined);
 
-export function DivisionProvider({ children, divisions, onDivisionCreate }: { children: ReactNode } & DivisionContextType) {
+export function DivisionProvider({ children, divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete }: { children: ReactNode } & DivisionContextType) {
     return (
-        <DivisionContext.Provider value={{ divisions, onDivisionCreate }}>
+        <DivisionContext.Provider value={{ divisions, onDivisionCreate, onDivisionUpdate, onDivisionDelete }}>
             {children}
         </DivisionContext.Provider>
     );
