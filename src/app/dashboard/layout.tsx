@@ -12,15 +12,20 @@ import Link from 'next/link';
 import { useState, useCallback, ReactNode, cloneElement, Children } from 'react';
 import type { Task } from '@/types';
 import { initialTasks } from '@/lib/data';
-import { DivisionProvider } from '@/hooks/use-divisions';
+import { DivisionProvider, useDivisions } from '@/hooks/use-divisions';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import React from 'react';
 
+
 const initialDivisions = Array.from(new Set(initialTasks.map(task => task.division)));
 
+interface StateManagerProps {
+    children: ReactNode;
+}
+
 // This component will manage the state and pass it down
-function StateManager({ children }: { children: ReactNode }) {
+function StateManager({ children }: StateManagerProps) {
     const [tasks, setTasks] = useState<Task[]>(initialTasks);
     const [divisions, setDivisions] = useState<Task['division'][]>(initialDivisions);
     const router = useRouter();
@@ -81,7 +86,7 @@ function StateManager({ children }: { children: ReactNode }) {
     }, [router]);
 
     const childrenWithProps = Children.map(children, child => {
-        if (React.isValidElement(child)) {
+        if (React.isValidElement(child) && (child.type.name === 'DashboardPage' || child.type.name === 'DivisionDashboardPage')) {
             return cloneElement(child, { 
                 tasks,
                 onTaskCreate: handleAddTask,
@@ -99,15 +104,6 @@ function StateManager({ children }: { children: ReactNode }) {
             onDivisionUpdate={handleUpdateDivision}
             onDivisionDelete={handleDeleteDivision}
         >
-            {childrenWithProps}
-        </DivisionProvider>
-    );
-}
-
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <SidebarProvider>
             <Sidebar>
                 <SidebarHeader>
                     <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -118,18 +114,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
-                    {/* StateManager only needs to wrap MainNav for the division context */}
-                    <StateManager>
-                        <MainNav />
-                    </StateManager>
+                    <MainNav />
                 </SidebarContent>
             </Sidebar>
             <SidebarInset>
-                 {/* And the main content area */}
-                <StateManager>
-                    {children}
-                </StateManager>
+                {childrenWithProps}
             </SidebarInset>
+        </DivisionProvider>
+    );
+}
+
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <SidebarProvider>
+            <StateManager>
+                {children}
+            </StateManager>
         </SidebarProvider>
     );
 }
