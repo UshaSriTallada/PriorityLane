@@ -83,7 +83,7 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     });
   };
 
-  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason'>) => {
+  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'>) => {
     const newTask: Task = {
         ...newTaskData,
         id: `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -130,7 +130,7 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
             </div>
 
             {filteredTasks.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {filteredTasks.map((task) => (
                       <TaskCard key={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} />
                   ))}
