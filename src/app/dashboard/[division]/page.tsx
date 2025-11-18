@@ -2,7 +2,7 @@
 import DashboardClient from '@/components/dashboard-client';
 import { initialTasks } from '@/lib/data';
 import { notFound } from 'next/navigation';
-import { useState } from 'react';
+import { useState, use } from 'react';
 import type { Task } from '@/types';
 import { useDivisions } from '@/hooks/use-divisions';
 
