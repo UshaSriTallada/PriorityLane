@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "user-avatar-header",
+      "description": "User avatar for the header",
+      "imageUrl": "https://images.unsplash.com/photo-1710974481447-fb001ad9ad5a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxwZXJzb24lMjBmYWNlfGVufDB8fHx8MTc2MzQyMzM3OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "person face"
+    },
+    {
+      "id": "assignee-avatar-1",
+      "description": "Avatar for assignee John Doe",
+      "imageUrl": "https://images.unsplash.com/photo-1611608822772-43a28a830759?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBmYWNlfGVufDB8fHx8MTc2MzQ0MDU3Nnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man face"
+    },
+    {
+      "id": "assignee-avatar-2",
+      "description": "Avatar for assignee Jane Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHx3b21hbiUyMGZhY2V8ZW58MHx8fHwxNzYzMzczNjYxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman face"
+    },
+    {
+      "id": "assignee-avatar-3",
+      "description": "Avatar for assignee Mike Johnson",
+      "imageUrl": "https://images.unsplash.com/photo-1613309440822-38f3fb0d5477?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxtYW4lMjBmYWNlJTIwZ2xhc3Nlc3xlbnwwfHx8fDE3NjMzNjMwMzR8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man face glasses"
+    },
+    {
+      "id": "assignee-avatar-4",
+      "description": "Avatar for assignee Sarah Chen",
+      "imageUrl": "https://images.unsplash.com/photo-1612018888057-0c0fef6de098?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHx3b21hbiUyMGZhY2UlMjBzbWlsaW5nfGVufDB8fHx8MTc2MzQxODI0M3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman face smiling"
+    }
+  ]
 }
