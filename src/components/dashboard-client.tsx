@@ -6,42 +6,58 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/header";
-import { TaskCard } from "@/components/task-card";
 import { NewTaskDialog } from "@/components/new-task-dialog";
 import { EditTaskDialog } from "@/components/edit-task-dialog";
 import { getTaskPriorities } from "@/app/actions";
 import type { Task } from "@/types";
 import { isPast } from 'date-fns';
 import { useStateManager } from "@/hooks/use-state-manager";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { SortableTaskItem } from './sortable-task-item';
 
 interface DashboardClientProps {
   selectedDivision?: string;
 }
 
 export default function DashboardClient({ selectedDivision }: DashboardClientProps) {
-  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange } = useStateManager();
-  const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks || []);
+  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder } = useStateManager();
+  const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   // Keep the state in sync with context
   useEffect(() => {
-    setCurrentTasks(tasks || []);
+    setCurrentTasks(tasks);
   }, [tasks]);
 
   const filteredTasks = useMemo(() => {
-    if (!tasks) return [];
-    const tasksToFilter = selectedDivision ? tasks.filter(task => task.division === selectedDivision) : tasks;
+    const tasksToFilter = selectedDivision
+      ? currentTasks.filter(task => task.division === selectedDivision)
+      : currentTasks;
     
-    const priorityMap = new Map((currentTasks || []).map(t => [t.id, {p: t.priority, pr: t.priorityReason}]));
-
+    // Create a stable priority map
+    const priorityMap = new Map(currentTasks.map(t => [t.id, { p: t.priority, pr: t.priorityReason }]));
+    
     return tasksToFilter.map(t => {
       const p = priorityMap.get(t.id);
-      return {...t, priority: p?.p, priorityReason: p?.pr};
-    }).sort((a,b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
-
-  }, [tasks, selectedDivision, currentTasks]);
+      return { ...t, priority: p?.p, priorityReason: p?.pr };
+    }).sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
+    
+  }, [selectedDivision, currentTasks]);
 
   const overdueCount = useMemo(() => {
     return filteredTasks.reduce((count, task) => {
@@ -105,6 +121,25 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
   const pageTitle = selectedDivision ? `${selectedDivision} Tasks` : "Task Dashboard";
   const pageDescription = selectedDivision ? `Tasks for the ${selectedDivision} division.` : "Manage and prioritize your factory's workload.";
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  function handleDragEnd(event: DragEndEvent) {
+    const {active, over} = event;
+    
+    if (over && active.id !== over.id) {
+      onTasksReorder(active.id as string, over.id as string);
+    }
+  }
+  
+  // Disable drag-and-drop if a division is selected
+  const isDndDisabled = !!selectedDivision;
+
+
   return (
     <>
       <div className="flex h-screen flex-col">
@@ -130,11 +165,20 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
             </div>
 
             {filteredTasks.length > 0 ? (
-              <div className="grid items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {filteredTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} />
-                  ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+                disabled={isDndDisabled}
+              >
+                <SortableContext items={filteredTasks} strategy={verticalListSortingStrategy}>
+                   <div className="grid items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                      {filteredTasks.map((task) => (
+                          <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} disabled={isDndDisabled} />
+                      ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
                   <h3 className="text-xl font-semibold">No tasks yet</h3>

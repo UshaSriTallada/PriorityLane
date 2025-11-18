@@ -4,6 +4,7 @@ import type { Task } from "@/types";
 import { initialTasks } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { arrayMove } from "@dnd-kit/sortable";
 
 const initialDivisions = Array.from(new Set(initialTasks.map(task => task.division)));
 
@@ -16,6 +17,7 @@ interface StateContextType {
     onDivisionCreate: (name: string) => void;
     onDivisionUpdate: (oldName: string, newName: string) => void;
     onDivisionDelete: (name: string) => void;
+    onTasksReorder: (activeId: string, overId: string) => void;
 }
 
 const StateContext = createContext<StateContextType | undefined>(undefined);
@@ -77,9 +79,17 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
     const handleDeleteDivision = useCallback((name: string) => {
         setDivisions(prev => prev.filter(d => d !== name));
-        setTasks(prev => prev.filter(task => task.division !== name));
+        setTasks(prevTasks => prevTasks.filter(task => task.division !== name));
         router.push('/dashboard');
     }, [router]);
+
+    const handleTasksReorder = (activeId: string, overId: string) => {
+        setTasks((items) => {
+          const oldIndex = items.findIndex((item) => item.id === activeId);
+          const newIndex = items.findIndex((item) => item.id === overId);
+          return arrayMove(items, oldIndex, newIndex);
+        });
+      };
 
     const value = {
         tasks,
@@ -90,6 +100,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
         onDivisionCreate: handleAddDivision,
         onDivisionUpdate: handleUpdateDivision,
         onDivisionDelete: handleDeleteDivision,
+        onTasksReorder: handleTasksReorder
     };
 
     return (
