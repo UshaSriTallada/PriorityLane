@@ -77,6 +77,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
     const handleDeleteDivision = useCallback((name: string) => {
         setDivisions(prev => prev.filter(d => d !== name));
+        setTasks(prev => prev.filter(task => task.division !== name));
         router.push('/dashboard');
     }, [router]);
 
