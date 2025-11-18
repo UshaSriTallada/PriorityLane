@@ -1,16 +1,24 @@
 'use client';
 import DashboardClient from '@/components/dashboard-client';
-import { initialTasks } from '@/lib/data';
-import { notFound } from 'next/navigation';
-import { useState, use } from 'react';
+import { use } from 'react';
 import type { Task } from '@/types';
 import { useDivisions } from '@/hooks/use-divisions';
 
-export default function DivisionDashboardPage({ params }: { params: { division: string } }) {
-    const [tasks, setTasks] = useState<Task[]>(initialTasks);
+// These props are now passed from the layout
+interface DivisionDashboardPageProps {
+  params: { division: string };
+  tasks: Task[];
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
+  onTaskUpdate: (updatedTask: Task) => void;
+  onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
+}
+
+
+export default function DivisionDashboardPage({ params, tasks, onTaskCreate, onTaskUpdate, onSubtaskChange }: DivisionDashboardPageProps) {
     const { divisions } = useDivisions();
+    const resolvedParams = use(Promise.resolve(params));
   
-    const decodedDivision = decodeURIComponent(params.division);
+    const decodedDivision = decodeURIComponent(resolvedParams.division);
     const divisionExists = divisions.map(d => d.toLowerCase()).includes(decodedDivision);
 
     const getDivisionDisplayName = (slug: string) => {
@@ -27,9 +35,12 @@ export default function DivisionDashboardPage({ params }: { params: { division: 
 
     return (
         <DashboardClient 
-            initialTasks={tasks} 
+            tasks={tasks}
             divisions={divisions}
             selectedDivision={divisionDisplayName}
+            onTaskCreate={onTaskCreate}
+            onTaskUpdate={onTaskUpdate}
+            onSubtaskChange={onSubtaskChange}
         />
     );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -9,25 +9,41 @@ import { TaskCard } from "@/components/task-card";
 import { NewTaskDialog } from "@/components/new-task-dialog";
 import { EditTaskDialog } from "@/components/edit-task-dialog";
 import { getTaskPriorities } from "@/app/actions";
-import type { Task, Subtask } from "@/types";
+import type { Task } from "@/types";
 import { isPast } from 'date-fns';
 
 interface DashboardClientProps {
-  initialTasks: Task[];
+  tasks: Task[];
   divisions: Task['division'][];
   selectedDivision?: string;
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
+  onTaskUpdate: (updatedTask: Task) => void;
+  onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
 }
 
-export default function DashboardClient({ initialTasks, divisions, selectedDivision }: DashboardClientProps) {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+export default function DashboardClient({ tasks, divisions, selectedDivision, onTaskCreate, onTaskUpdate, onSubtaskChange }: DashboardClientProps) {
+  const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks || []);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 
+  // Keep the state in sync with props
+  useEffect(() => {
+    setCurrentTasks(tasks || []);
+  }, [tasks]);
+
   const filteredTasks = useMemo(() => {
-    if (!selectedDivision) return tasks;
-    return tasks.filter(task => task.division === selectedDivision);
-  }, [tasks, selectedDivision]);
+    if (!tasks) return [];
+    const tasksToFilter = selectedDivision ? tasks.filter(task => task.division === selectedDivision) : tasks;
+    
+    const priorityMap = new Map((currentTasks || []).map(t => [t.id, {p: t.priority, pr: t.priorityReason}]));
+
+    return tasksToFilter.map(t => {
+      const p = priorityMap.get(t.id);
+      return {...t, priority: p?.p, priorityReason: p?.pr};
+    }).sort((a,b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
+
+  }, [tasks, selectedDivision, currentTasks]);
 
   const overdueCount = useMemo(() => {
     return filteredTasks.reduce((count, task) => {
@@ -40,6 +56,7 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
   }, [filteredTasks]);
 
   const handlePrioritize = () => {
+    if (!tasks) return;
     startTransition(async () => {
       const result = await getTaskPriorities(tasks);
       if (result.success && result.data) {
@@ -52,7 +69,7 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
 
         updatedTasks.sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
         
-        setTasks(updatedTasks);
+        setCurrentTasks(updatedTasks);
 
         toast({
           title: "Tasks Prioritized!",
@@ -79,34 +96,12 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
             avatarUrl: `https://picsum.photos/seed/${Math.random()}/32/32`,
         }
     };
-    setTasks(prevTasks => [newTask, ...prevTasks]);
-    toast({
-        title: "Task Created",
-        description: `"${newTask.name}" has been added to your list.`,
-    });
+    onTaskCreate(newTask);
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
-    setTasks(prevTasks => prevTasks.map(task => task.id === updatedTask.id ? updatedTask : task));
+    onTaskUpdate(updatedTask);
     setEditingTask(null);
-    toast({
-        title: "Task Updated",
-        description: `"${updatedTask.name}" has been successfully updated.`,
-    });
-  };
-
-  const handleSubtaskChange = (taskId: string, subtaskId: string, completed: boolean) => {
-    setTasks(prevTasks => prevTasks.map(task => {
-        if (task.id === taskId) {
-            return {
-                ...task,
-                subtasks: task.subtasks.map(subtask => 
-                    subtask.id === subtaskId ? { ...subtask, completed } : subtask
-                )
-            };
-        }
-        return task;
-    }));
   };
 
   const pageTitle = selectedDivision ? `${selectedDivision} Tasks` : "Task Dashboard";
@@ -139,7 +134,7 @@ export default function DashboardClient({ initialTasks, divisions, selectedDivis
             {filteredTasks.length > 0 ? (
               <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {filteredTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} onSubtaskChange={handleSubtaskChange} onEdit={() => setEditingTask(task)} />
+                      <TaskCard key={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} />
                   ))}
               </div>
             ) : (
