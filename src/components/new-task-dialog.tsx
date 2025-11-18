@@ -38,13 +38,12 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task } from "@/types";
 
-const divisions: Task['division'][] = ['Operations', 'Processing', 'Production', 'Maintenance', 'Logistics'];
 const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
 
 const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
   description: z.string().optional(),
-  division: z.enum(divisions),
+  division: z.string().min(1, { message: "Please select a division" }),
   assigneeName: z.string().min(2, { message: "Assignee name is required." }),
   impact: z.enum(impacts),
   deadline: z.date({ required_error: "A deadline is required." }),
@@ -52,16 +51,21 @@ const taskSchema = z.object({
 
 interface NewTaskDialogProps {
   onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'assignee' | 'priority' | 'priorityReason' | 'avatarUrl'> & { assignee: { name: string } }) => void;
+  divisions: Task['division'][];
 }
 
-export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
+export function NewTaskDialog({ onTaskCreate, divisions }: NewTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const form = useForm<z.infer<typeof taskSchema>>({
-    resolver: zodResolver(taskSchema),
+    resolver: zodResolver(taskSchema.extend({
+        division: z.enum(divisions as [string, ...string[]], {
+            errorMap: () => ({ message: "Please select a division." }),
+        })
+    })),
     defaultValues: {
       name: "",
       description: "",
-      division: "Production",
+      division: divisions[0],
       assigneeName: "",
       impact: "Medium",
     },
@@ -71,7 +75,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
     onTaskCreate({
       name: values.name,
       description: values.description || "",
-      division: values.division,
+      division: values.division as Task['division'],
       assignee: { name: values.assigneeName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),

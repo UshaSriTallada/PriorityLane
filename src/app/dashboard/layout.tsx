@@ -1,3 +1,4 @@
+'use client';
 import MainNav from '@/components/main-nav';
 import {
   Sidebar,
@@ -8,8 +9,23 @@ import {
 } from '@/components/ui/sidebar';
 import { Factory } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import type { Task } from '@/types';
+import { initialTasks } from '@/lib/data';
+
+const initialDivisions = Array.from(new Set(initialTasks.map(task => task.division)));
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [divisions, setDivisions] = useState<Task['division'][]>(initialDivisions);
+  
+  const handleAddDivision = (name: string) => {
+    // This is a simple client-side update. In a real app, this would
+    // likely involve an API call to persist the new division.
+    if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
+        setDivisions(prev => [...prev, name as Task['division']]);
+    }
+  };
+
   return (
     <SidebarProvider>
       <Sidebar>
@@ -22,7 +38,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </SidebarHeader>
         <SidebarContent className="p-2">
-          <MainNav />
+          <MainNav divisions={divisions} onDivisionCreate={handleAddDivision} />
         </SidebarContent>
       </Sidebar>
       <SidebarInset>

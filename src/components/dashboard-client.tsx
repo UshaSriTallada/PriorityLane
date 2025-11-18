@@ -13,22 +13,30 @@ import { isPast } from 'date-fns';
 
 interface DashboardClientProps {
   initialTasks: Task[];
+  divisions: Task['division'][];
+  onDivisionCreate: (name: string) => void;
+  selectedDivision?: string;
 }
 
-export default function DashboardClient({ initialTasks }: DashboardClientProps) {
+export default function DashboardClient({ initialTasks, divisions, onDivisionCreate, selectedDivision }: DashboardClientProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
 
+  const filteredTasks = useMemo(() => {
+    if (!selectedDivision) return tasks;
+    return tasks.filter(task => task.division === selectedDivision);
+  }, [tasks, selectedDivision]);
+
   const overdueCount = useMemo(() => {
-    return tasks.reduce((count, task) => {
+    return filteredTasks.reduce((count, task) => {
         const isTaskOverdue = !task.subtasks.every(st => st.completed) && isPast(new Date(task.deadline));
         if (isTaskOverdue) {
             return count + 1;
         }
         return count;
     }, 0);
-  }, [tasks]);
+  }, [filteredTasks]);
 
   const handlePrioritize = () => {
     startTransition(async () => {
@@ -91,6 +99,9 @@ export default function DashboardClient({ initialTasks }: DashboardClientProps) 
     }));
   };
 
+  const pageTitle = selectedDivision ? `${selectedDivision} Tasks` : "Task Dashboard";
+  const pageDescription = selectedDivision ? `Tasks for the ${selectedDivision} division.` : "Manage and prioritize your factory's workload.";
+
   return (
     <div className="flex h-screen flex-col">
       <Header overdueCount={overdueCount} />
@@ -98,8 +109,8 @@ export default function DashboardClient({ initialTasks }: DashboardClientProps) 
         <main className="p-4 md:p-6 lg:p-8">
           <div className="flex items-center justify-between mb-8">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Task Dashboard</h1>
-                <p className="text-muted-foreground">Manage and prioritize your factory's workload.</p>
+                <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
+                <p className="text-muted-foreground">{pageDescription}</p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" onClick={handlePrioritize} disabled={isPending}>
@@ -110,20 +121,20 @@ export default function DashboardClient({ initialTasks }: DashboardClientProps) 
                 )}
                 Prioritize with AI
               </Button>
-              <NewTaskDialog onTaskCreate={handleTaskCreate} />
+              <NewTaskDialog onTaskCreate={handleTaskCreate} divisions={divisions} />
             </div>
           </div>
 
-          {tasks.length > 0 ? (
+          {filteredTasks.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {tasks.map((task) => (
+                {filteredTasks.map((task) => (
                     <TaskCard key={task.id} task={task} onSubtaskChange={handleSubtaskChange} />
                 ))}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
                 <h3 className="text-xl font-semibold">No tasks yet</h3>
-                <p className="text-muted-foreground mt-2">Create your first task to get started.</p>
+                <p className="text-muted-foreground mt-2">{selectedDivision ? `No tasks found for the ${selectedDivision} division.` : "Create your first task to get started."}</p>
             </div>
           )}
         </main>
