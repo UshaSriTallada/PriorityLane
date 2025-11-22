@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { format, isPast, formatDistanceToNow } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus, CheckCircle2, Trash2 } from "lucide-react";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus, CheckCircle2, Trash2, GripVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
@@ -29,6 +29,8 @@ interface TaskCardProps {
   onTaskStart: (taskId: string) => void;
   onSubtaskStart: (taskId: string, subtaskId: string) => void;
   className?: string;
+  dragHandleProps?: any;
+  isDraggable?: boolean;
 }
 
 const impactVariantMap: Record<Task['impact'], 'destructive' | 'secondary' | 'outline'> = {
@@ -45,7 +47,7 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange, onEdit, onDelete, onTaskStart, onSubtaskStart, className }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit, onDelete, onTaskStart, onSubtaskStart, className, dragHandleProps, isDraggable = false }: TaskCardProps) {
   const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
   const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : (task.doneAt ? 100 : 0);
@@ -61,6 +63,15 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onDelete, onTaskStart,
                 <CardDescription className="mt-1 line-clamp-2">{task.description}</CardDescription>
             </div>
             <div className="flex items-center gap-1">
+                 {isDraggable && (
+                     <button
+                        {...dragHandleProps}
+                        className="p-1 text-muted-foreground hover:text-foreground transition-colors cursor-grab active:cursor-grabbing"
+                        aria-label="Drag to reorder"
+                    >
+                        <GripVertical className="h-5 w-5" />
+                    </button>
+                 )}
                 <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEdit(task)}>
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit Task</span>
@@ -89,7 +100,7 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onDelete, onTaskStart,
                     <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <div className="flex items-center gap-1.5 text-accent-foreground/80 font-bold bg-accent/10 rounded-full px-3 py-1">
+                                <div className="flex items-center gap-1.5 text-accent-foreground/80 font-bold bg-accent/10 rounded-full px-3 py-1 ml-2">
                                     <Sparkles className="h-4 w-4 text-accent" />
                                     <span className="text-lg">{task.priority}</span>
                                 </div>

@@ -6,7 +6,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { TaskCard } from './task-card';
 import { Task } from '@/types';
 import { cn } from '@/lib/utils';
-import { GripVertical } from 'lucide-react';
 
 interface SortableTaskItemProps {
   id: string;
@@ -45,17 +44,9 @@ export function SortableTaskItem({ id, task, onSubtaskChange, onEdit, onTaskDele
         onTaskStart={onTaskStart}
         onSubtaskStart={onSubtaskStart}
         className={cn(isDragging && 'shadow-2xl opacity-80')}
+        dragHandleProps={{...attributes, ...listeners}}
+        isDraggable={!disabled}
       />
-      {!disabled && (
-        <button
-            {...attributes}
-            {...listeners}
-            className="absolute top-4 right-14 p-1 text-muted-foreground hover:text-foreground transition-colors cursor-grab active:cursor-grabbing"
-            aria-label="Drag to reorder"
-        >
-            <GripVertical className="h-5 w-5" />
-        </button>
-      )}
     </div>
   );
 }
