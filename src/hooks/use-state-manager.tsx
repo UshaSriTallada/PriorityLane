@@ -80,7 +80,15 @@ export function StateProvider({ children }: { children: ReactNode }) {
     };
 
     const handleUpdateTask = async (updatedTask: Task) => {
-        await updateTask(updatedTask.id, updatedTask);
+        const cleanTask: Partial<Task> = { ...updatedTask };
+        if (cleanTask.priority === undefined) {
+            delete cleanTask.priority;
+        }
+        if (cleanTask.priorityReason === undefined) {
+            delete cleanTask.priorityReason;
+        }
+
+        await updateTask(updatedTask.id, cleanTask);
         toast({
             title: "Task Updated",
             description: `"${updatedTask.name}" has been successfully updated.`,
