@@ -74,16 +74,16 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
 
   // Keep defaultValues in sync with divisions
   useEffect(() => {
-    if (open && divisions.length > 0) {
+    if (open) {
         form.reset({
             name: "",
             description: "",
-            division: divisions[0],
+            division: divisions.length > 0 ? divisions[0] : undefined,
             impact: "Medium",
             deadline: undefined
         });
     }
-  }, [divisions, open, form.reset]);
+  }, [open, divisions, form]);
 
   function onSubmit(values: z.infer<typeof taskSchema>) {
     onTaskCreate({

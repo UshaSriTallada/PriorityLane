@@ -11,6 +11,7 @@ import { useFirestore } from "@/firebase/provider";
 import { collection, doc, writeBatch, where, query } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { useMemoFirebase } from "./use-memo-firebase";
 
 
 interface StateContextType {
@@ -36,13 +37,21 @@ export function StateProvider({ children }: { children: ReactNode }) {
     const { toast } = useToast();
 
     // Firestore data hooks
-    const tasksQuery = user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null;
+    const tasksQuery = useMemoFirebase(() => 
+        user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null,
+        [user, firestore]
+    );
+
     const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(tasksQuery, {
       orderBy: 'order',
       listen: true,
     });
 
-    const divisionsQuery = user ? query(collection(firestore, 'users', user.uid, 'divisions')) : null;
+    const divisionsQuery = useMemoFirebase(() => 
+        user ? query(collection(firestore, 'users', user.uid, 'divisions')) : null,
+        [user, firestore]
+    );
+
     const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<{name: string}>(divisionsQuery);
     
     const divisions = divisionsData.map(d => d.name as Task['division']);
