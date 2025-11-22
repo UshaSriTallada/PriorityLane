@@ -67,14 +67,14 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
     defaultValues: {
       name: "",
       description: "",
-      division: divisions[0],
+      division: divisions.length > 0 ? divisions[0] : undefined,
       impact: "Medium",
     },
   });
 
   // Keep defaultValues in sync with divisions
   useEffect(() => {
-    if (divisions.length > 0) {
+    if (open && divisions.length > 0) {
         form.reset({
             name: "",
             description: "",
