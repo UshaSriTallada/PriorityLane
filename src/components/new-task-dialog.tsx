@@ -83,7 +83,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
             deadline: undefined
         });
     }
-  }, [divisions, form, open]);
+  }, [divisions, open, form.reset]);
 
   function onSubmit(values: z.infer<typeof taskSchema>) {
     onTaskCreate({
