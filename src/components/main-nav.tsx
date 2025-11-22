@@ -1,3 +1,4 @@
+
 'use client';
 
 import { usePathname } from 'next/navigation';
@@ -209,10 +210,10 @@ export default function MainNav() {
     <>
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="All Tasks">
+          <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip="Active Tasks">
             <Link href="/dashboard">
               <ClipboardList />
-              <span className="group-data-[collapsible=icon]:hidden">All Tasks</span>
+              <span className="group-data-[collapsible=icon]:hidden">Active Tasks</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
