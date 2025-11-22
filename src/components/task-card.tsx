@@ -14,7 +14,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { format, isPast, formatDistanceToNow } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus } from "lucide-react";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 
@@ -40,12 +40,13 @@ const divisionColorMap: Record<Task['division'], string> = {
 }
 
 export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCardProps) {
-  const isTaskOverdue = isPast(new Date(task.deadline));
+  const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
-  const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0;
+  const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : (task.doneAt ? 100 : 0);
+  const isCompleted = !!task.doneAt;
 
   return (
-    <Card className={cn(isTaskOverdue && "border-destructive/50 ring-1 ring-destructive/20", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col")}>
+    <Card className={cn(isTaskOverdue && "border-destructive/50 ring-1 ring-destructive/20", isCompleted && "bg-muted/50", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col")}>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
@@ -88,10 +89,12 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCar
             </div>
         </div>
         
-        {task.subtasks.length > 0 && (
+        {(task.subtasks.length > 0 || isCompleted) && (
           <div>
             <Progress value={progress} className="h-2" />
-            <div className="text-xs text-muted-foreground mt-1">{completedSubtasks} of {task.subtasks.length} subtasks complete</div>
+            <div className="text-xs text-muted-foreground mt-1">
+                {isCompleted ? "Completed" : `${completedSubtasks} of ${task.subtasks.length} subtasks complete`}
+            </div>
           </div>
         )}
 
@@ -161,7 +164,19 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCar
                 </Tooltip>
             </TooltipProvider>
 
-            {task.startedAt ? (
+            {isCompleted && task.doneAt ? (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1.5 font-medium text-green-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Completed {formatDistanceToNow(new Date(task.doneAt), { addSuffix: true })}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {format(new Date(task.doneAt), "PPP p")}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ) : task.startedAt ? (
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1.5">

@@ -20,6 +20,7 @@ export type Task = {
   deadline: string;
   createdAt: string;
   startedAt?: string;
+  doneAt?: string;
   dependencies: string[];
   division: 'Operations' | 'Processing' | 'Production' | 'Maintenance' | 'Logistics';
   owner: Assignee;
@@ -28,4 +29,5 @@ export type Task = {
   priority?: number;
   priorityReason?: string;
 };
+
 

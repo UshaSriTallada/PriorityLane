@@ -49,11 +49,27 @@ export function StateProvider({ children }: { children: ReactNode }) {
     const handleSubtaskChange = (taskId: string, subtaskId: string, completed: boolean) => {
         setTasks(prev => prev.map(task => {
             if (task.id === taskId) {
+                const updatedSubtasks = task.subtasks.map(sub => 
+                    sub.id === subtaskId ? { ...sub, completed } : sub
+                );
+
+                const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
+                
+                let doneAt = task.doneAt;
+                if (allSubtasksCompleted && !task.doneAt) {
+                    doneAt = new Date().toISOString();
+                     toast({
+                        title: "Task Completed!",
+                        description: `"${task.name}" is now finished.`,
+                    });
+                } else if (!allSubtasksCompleted && task.doneAt) {
+                    doneAt = undefined;
+                }
+
                 return {
                     ...task,
-                    subtasks: task.subtasks.map(sub => 
-                        sub.id === subtaskId ? { ...sub, completed } : sub
-                    )
+                    subtasks: updatedSubtasks,
+                    doneAt: doneAt,
                 };
             }
             return task;
