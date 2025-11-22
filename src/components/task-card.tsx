@@ -23,6 +23,7 @@ interface TaskCardProps {
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
   onEdit: (task: Task) => void;
   onTaskStart: (taskId: string) => void;
+  className?: string;
 }
 
 const impactVariantMap: Record<Task['impact'], 'destructive' | 'secondary' | 'outline'> = {
@@ -39,14 +40,14 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, className }: TaskCardProps) {
   const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
   const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : (task.doneAt ? 100 : 0);
   const isCompleted = !!task.doneAt;
 
   return (
-    <Card className={cn(isTaskOverdue && "border-destructive/50 ring-1 ring-destructive/20", isCompleted && "bg-muted/50", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col")}>
+    <Card className={cn("border-destructive/50 ring-1 ring-destructive/20", isCompleted && "bg-muted/50", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col", className)}>
       <CardHeader>
         <div className="flex justify-between items-start gap-4">
             <div className="flex-1">
@@ -164,19 +165,14 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCar
                 </Tooltip>
             </TooltipProvider>
 
-            {isCompleted && task.doneAt ? (
-                 <TooltipProvider>
-                    <Tooltip>
-                        <TooltipTrigger className="flex items-center gap-1.5 font-medium text-green-600">
-                            <CheckCircle2 className="h-3.5 w-3.5" />
-                            Completed {formatDistanceToNow(new Date(task.doneAt), { addSuffix: true })}
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            {format(new Date(task.doneAt), "PPP p")}
-                        </TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-            ) : task.startedAt ? (
+            {!isCompleted && !task.startedAt && (
+                 <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onTaskStart(task.id)}>
+                    <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Start Task
+                </Button>
+            )}
+
+            {task.startedAt && (
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger className="flex items-center gap-1.5">
@@ -188,11 +184,20 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCar
                         </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
-            ) : (
-                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onTaskStart(task.id)}>
-                    <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
-                    Start Task
-                </Button>
+            )}
+
+            {isCompleted && task.doneAt && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1.5 font-medium text-green-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Completed {formatDistanceToNow(new Date(task.doneAt), { addSuffix: true })}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {format(new Date(task.doneAt), "PPP p")}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
             )}
         </div>
       </CardFooter>
