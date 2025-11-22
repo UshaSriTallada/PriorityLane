@@ -16,6 +16,7 @@ interface StateContextType {
     onTaskUpdate: (updatedTask: Task) => void;
     onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
     onTaskStart: (taskId: string) => void;
+    onSubtaskStart: (taskId: string, subtaskId: string) => void;
     onDivisionCreate: (name: string) => void;
     onDivisionUpdate: (oldName: string, newName: string) => void;
     onDivisionDelete: (name: string) => void;
@@ -49,9 +50,16 @@ export function StateProvider({ children }: { children: ReactNode }) {
     const handleSubtaskChange = (taskId: string, subtaskId: string, completed: boolean) => {
         setTasks(prev => prev.map(task => {
             if (task.id === taskId) {
-                const updatedSubtasks = task.subtasks.map(sub => 
-                    sub.id === subtaskId ? { ...sub, completed } : sub
-                );
+                const updatedSubtasks = task.subtasks.map(sub => {
+                    if (sub.id === subtaskId) {
+                        return { 
+                            ...sub, 
+                            completed,
+                            completedAt: completed ? new Date().toISOString() : undefined,
+                         };
+                    }
+                    return sub;
+                });
 
                 const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
                 
@@ -84,6 +92,25 @@ export function StateProvider({ children }: { children: ReactNode }) {
                     description: `"${task.name}" has been marked as started.`,
                 });
                 return { ...task, startedAt: new Date().toISOString() };
+            }
+            return task;
+        }));
+    };
+
+    const handleSubtaskStart = (taskId: string, subtaskId: string) => {
+        setTasks(prev => prev.map(task => {
+            if (task.id === taskId) {
+                const updatedSubtasks = task.subtasks.map(sub => {
+                    if (sub.id === subtaskId && !sub.startedAt) {
+                        toast({
+                            title: "Subtask Started",
+                            description: `Subtask "${sub.name}" has been started.`,
+                        });
+                        return { ...sub, startedAt: new Date().toISOString() };
+                    }
+                    return sub;
+                });
+                return { ...task, subtasks: updatedSubtasks };
             }
             return task;
         }));
@@ -129,6 +156,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
         onTaskUpdate: handleUpdateTask,
         onSubtaskChange: handleSubtaskChange,
         onTaskStart: handleTaskStart,
+        onSubtaskStart: handleSubtaskStart,
         onDivisionCreate: handleAddDivision,
         onDivisionUpdate: handleUpdateDivision,
         onDivisionDelete: handleDeleteDivision,

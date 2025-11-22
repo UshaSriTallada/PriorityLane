@@ -11,6 +11,9 @@ export type Subtask = {
   deadline: string;
   completed: boolean;
   assignee?: Assignee;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
 };
 
 export type Task = {
@@ -29,5 +32,3 @@ export type Task = {
   priority?: number;
   priorityReason?: string;
 };
-
-

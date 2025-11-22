@@ -14,10 +14,11 @@ interface SortableTaskItemProps {
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
   onEdit: (task: Task) => void;
   onTaskStart: (taskId: string) => void;
+  onSubtaskStart: (taskId: string, subtaskId: string) => void;
   disabled?: boolean;
 }
 
-export function SortableTaskItem({ id, task, onSubtaskChange, onEdit, onTaskStart, disabled }: SortableTaskItemProps) {
+export function SortableTaskItem({ id, task, onSubtaskChange, onEdit, onTaskStart, onSubtaskStart, disabled }: SortableTaskItemProps) {
   const {
     attributes,
     listeners,
@@ -40,6 +41,7 @@ export function SortableTaskItem({ id, task, onSubtaskChange, onEdit, onTaskStar
         onSubtaskChange={onSubtaskChange}
         onEdit={onEdit}
         onTaskStart={onTaskStart}
+        onSubtaskStart={onSubtaskStart}
         className={cn(isDragging && 'shadow-2xl opacity-80')}
       />
       {!disabled && (

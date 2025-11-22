@@ -96,7 +96,8 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
         name: 'New Subtask',
         description: '',
         deadline: new Date().toISOString(),
-        completed: false
+        completed: false,
+        createdAt: new Date().toISOString()
     };
     setSubtasks([...subtasks, newSubtask]);
   };

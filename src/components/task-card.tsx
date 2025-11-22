@@ -23,6 +23,7 @@ interface TaskCardProps {
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
   onEdit: (task: Task) => void;
   onTaskStart: (taskId: string) => void;
+  onSubtaskStart: (taskId: string, subtaskId: string) => void;
   className?: string;
 }
 
@@ -40,7 +41,7 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, className }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtaskStart, className }: TaskCardProps) {
   const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
   const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : (task.doneAt ? 100 : 0);
@@ -134,6 +135,51 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, className
                                             <User className="h-3 w-3 text-muted-foreground"/>
                                             <span>{subtask.assignee.name}</span>
                                         </div>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger className="flex items-center gap-1">
+                                                <CalendarPlus className="h-3 w-3"/>
+                                                Created {formatDistanceToNow(new Date(subtask.createdAt), { addSuffix: true })}
+                                            </TooltipTrigger>
+                                            <TooltipContent side="bottom" align="start">
+                                                {format(new Date(subtask.createdAt), "PPP p")}
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                                     {!subtask.completed && !subtask.startedAt && (
+                                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={() => onSubtaskStart(task.id, subtask.id)}>
+                                            <PlayCircle className="h-3 w-3 mr-1" />
+                                            Start
+                                        </Button>
+                                    )}
+                                    {subtask.startedAt && !subtask.completedAt && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger className="flex items-center gap-1 text-green-600">
+                                                    <PlayCircle className="h-3 w-3" />
+                                                    Started {formatDistanceToNow(new Date(subtask.startedAt), { addSuffix: true })}
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom" align="start">
+                                                    {format(new Date(subtask.startedAt), "PPP p")}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    )}
+                                    {subtask.completedAt && (
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger className="flex items-center gap-1 text-green-600 font-medium">
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    Completed {formatDistanceToNow(new Date(subtask.completedAt), { addSuffix: true })}
+                                                </TooltipTrigger>
+                                                <TooltipContent side="bottom" align="start">
+                                                    {format(new Date(subtask.completedAt), "PPP p")}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     )}
                                 </div>
                             </div>
