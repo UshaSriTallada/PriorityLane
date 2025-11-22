@@ -39,6 +39,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task } from "@/types";
 import { useDivisions } from "@/hooks/use-divisions";
+import { useUser } from "@/firebase";
 
 const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
 
@@ -46,18 +47,18 @@ const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
   description: z.string().optional(),
   division: z.string().min(1, { message: "Please select a division" }),
-  ownerName: z.string().min(2, { message: "Owner name is required." }),
   impact: z.enum(impacts),
   deadline: z.date({ required_error: "A deadline is required." }),
 });
 
 interface NewTaskDialogProps {
-  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason' | 'startedAt'> & { owner: { name: string } }) => void;
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies'| 'owner' | 'priority' | 'priorityReason' | 'startedAt' | 'createdAt'>) => void;
 }
 
 export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const { divisions } = useDivisions();
+  const { user } = useUser();
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema.extend({
@@ -69,7 +70,6 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
       name: "",
       description: "",
       division: divisions[0],
-      ownerName: "",
       impact: "Medium",
     },
   });
@@ -89,10 +89,8 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
       name: values.name,
       description: values.description || "",
       division: values.division as Task['division'],
-      owner: { name: values.ownerName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),
-      createdAt: new Date().toISOString(),
     });
     form.reset();
     setOpen(false);
@@ -110,7 +108,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Fill in the details below to create a new task for your team.
+            Fill in the details below to create a new task for your team. The task will be assigned to you.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -164,21 +162,6 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
               />
               <FormField
                 control={form.control}
-                name="ownerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FormField
-                control={form.control}
                 name="impact"
                 render={({ field }) => (
                   <FormItem>
@@ -197,7 +180,8 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                   </FormItem>
                 )}
               />
-              <FormField
+            </div>
+             <FormField
                 control={form.control}
                 name="deadline"
                 render={({ field }) => (
@@ -236,7 +220,6 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                   </FormItem>
                 )}
               />
-            </div>
             <DialogFooter>
               <Button type="submit">Create Task</Button>
             </DialogFooter>

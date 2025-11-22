@@ -5,12 +5,10 @@ import { useState, useTransition, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import Header from "@/components/header";
 import { NewTaskDialog } from "@/components/new-task-dialog";
 import { EditTaskDialog } from "@/components/edit-task-dialog";
 import { getTaskPriorities } from "@/app/actions";
 import type { Task } from "@/types";
-import { isPast } from 'date-fns';
 import { useStateManager } from "@/hooks/use-state-manager";
 import {
   DndContext,
@@ -28,6 +26,7 @@ import {
 } from '@dnd-kit/sortable';
 import { SortableTaskItem } from './sortable-task-item';
 import { Separator } from "./ui/separator";
+import { useUser } from "@/firebase";
 
 interface DashboardClientProps {
   selectedDivision?: string;
@@ -36,6 +35,7 @@ interface DashboardClientProps {
 
 export default function DashboardClient({ selectedDivision, filter = 'active' }: DashboardClientProps) {
   const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder, onTaskStart, onSubtaskStart } = useStateManager();
+  const { user } = useUser();
   const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -87,16 +87,6 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
 
   }, [selectedDivision, currentTasks, filter]);
 
-  const overdueCount = useMemo(() => {
-    return tasks.reduce((count, task) => {
-        const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
-        if (isTaskOverdue) {
-            return count + 1;
-        }
-        return count;
-    }, 0);
-  }, [tasks]);
-
   const handlePrioritize = () => {
     if (!tasks) return;
     startTransition(async () => {
@@ -130,16 +120,24 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
     });
   };
 
-  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'| 'owner' | 'startedAt'> & { owner: {name: string}}) => {
+  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'| 'owner' | 'startedAt' | 'createdAt'>) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to create a task.' });
+      return;
+    }
+
+    const newOwner = {
+        name: user.displayName || user.email || 'Anonymous',
+        avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/32/32`,
+    };
+
     const newTask: Task = {
         ...newTaskData,
         id: `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
         subtasks: [],
         dependencies: [],
-        owner: {
-            ...newTaskData.owner,
-            avatarUrl: `https://picsum.photos/seed/${Math.random()}/32/32`,
-        }
+        owner: newOwner,
+        createdAt: new Date().toISOString()
     };
     onTaskCreate(newTask);
   };
@@ -169,52 +167,47 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
 
   return (
     <>
-      <div className="flex h-screen flex-col">
-        <Header overdueCount={overdueCount} />
-        <div className="flex-1 overflow-y-auto">
-          <main className="p-4 md:p-6 lg:p-8">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                  <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
-                  <p className="text-muted-foreground">{pageDescription}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handlePrioritize} disabled={isPending || filter === 'completed'}>
-                  {isPending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="mr-2 h-4 w-4 text-accent" />
-                  )}
-                  Prioritize with AI
-                </Button>
-                <NewTaskDialog onTaskCreate={handleTaskCreate} />
-              </div>
-            </div>
-
-            {visibleTasks.length > 0 ? (
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-                disabled={isDndDisabled}
-              >
-                <SortableContext items={visibleTasks} strategy={verticalListSortingStrategy}>
-                   <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                      {visibleTasks.map((task) => (
-                          <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
-                      ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            ) : (
-              <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-                  <h3 className="text-xl font-semibold">No tasks found</h3>
-                  <p className="text-muted-foreground mt-2">There are no tasks that match the current filters.</p>
-              </div>
-            )}
-          </main>
+      <main className="p-4 md:p-6 lg:p-8">
+        <div className="flex items-center justify-between mb-8">
+          <div>
+              <h1 className="text-3xl font-bold tracking-tight">{pageTitle}</h1>
+              <p className="text-muted-foreground">{pageDescription}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handlePrioritize} disabled={isPending || filter === 'completed'}>
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4 text-accent" />
+              )}
+              Prioritize with AI
+            </Button>
+            <NewTaskDialog onTaskCreate={handleTaskCreate} />
+          </div>
         </div>
-      </div>
+
+        {visibleTasks.length > 0 ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            disabled={isDndDisabled}
+          >
+            <SortableContext items={visibleTasks} strategy={verticalListSortingStrategy}>
+               <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                  {visibleTasks.map((task) => (
+                      <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
+                  ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
+              <h3 className="text-xl font-semibold">No tasks found</h3>
+              <p className="text-muted-foreground mt-2">There are no tasks that match the current filters.</p>
+          </div>
+        )}
+      </main>
       {editingTask && (
         <EditTaskDialog
             task={editingTask}

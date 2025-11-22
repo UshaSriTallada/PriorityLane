@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task, Subtask } from "@/types";
 import { useDivisions } from "@/hooks/use-divisions";
+import { useUser } from "@/firebase";
 
 const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
 
@@ -58,6 +59,7 @@ interface EditTaskDialogProps {
 
 export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDialogProps) {
   const { divisions } = useDivisions();
+  const { user } = useUser();
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks);
 
   const form = useForm<z.infer<typeof taskSchema>>({
@@ -91,13 +93,18 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
   }
 
   const handleAddSubtask = () => {
+    const assigneeName = user?.displayName || user?.email || 'Unassigned';
     const newSubtask: Subtask = {
         id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
         name: 'New Subtask',
         description: '',
         deadline: new Date().toISOString(),
         completed: false,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        assignee: {
+            name: assigneeName,
+            avatarUrl: user?.photoURL || `https://picsum.photos/seed/${assigneeName}/32/32`,
+        }
     };
     setSubtasks([...subtasks, newSubtask]);
   };
@@ -114,7 +121,7 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
     if (name) {
         newSubtasks[index].assignee = {
             name: name,
-            avatarUrl: `https://picsum.photos/seed/${Math.random()}/32/32`,
+            avatarUrl: `https://picsum.photos/seed/${name}/32/32`,
         }
     } else {
         delete newSubtasks[index].assignee;

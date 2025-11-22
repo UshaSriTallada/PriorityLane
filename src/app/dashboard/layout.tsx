@@ -14,12 +14,28 @@ import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import Header from '@/components/header';
+import { useMemo } from 'react';
+import { isPast } from 'date-fns';
+import { useStateManager } from '@/hooks/use-state-manager';
+
 
 function DashboardNav() {
     return <MainNav />;
 }
 
 function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
+    const { tasks } = useStateManager();
+    const overdueCount = useMemo(() => {
+        return tasks.reduce((count, task) => {
+            const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
+            if (isTaskOverdue) {
+                return count + 1;
+            }
+            return count;
+        }, 0);
+      }, [tasks]);
+
     return (
         <StateProvider>
             <SidebarProvider>
@@ -37,7 +53,12 @@ function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
                     </SidebarContent>
                 </Sidebar>
                 <SidebarInset>
-                    {children}
+                    <div className="flex h-screen flex-col">
+                        <Header overdueCount={overdueCount} />
+                        <div className="flex-1 overflow-y-auto">
+                            {children}
+                        </div>
+                    </div>
                 </SidebarInset>
             </SidebarProvider>
         </StateProvider>

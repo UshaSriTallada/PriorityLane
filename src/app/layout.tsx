@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { UserProvider } from '@/firebase/auth/use-user';
 
 export const metadata: Metadata = {
   title: 'FactoryFlow',
@@ -23,7 +24,9 @@ export default function RootLayout({
       </head>
       <body className={cn("font-body antialiased", "min-h-screen bg-background font-sans")} suppressHydrationWarning={true}>
         <FirebaseClientProvider>
-          {children}
+          <UserProvider>
+            {children}
+          </UserProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>
