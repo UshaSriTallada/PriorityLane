@@ -39,7 +39,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Task } from "@/types";
 import { useDivisions } from "@/hooks/use-divisions";
-import { useUser } from "@/firebase";
 
 const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
 

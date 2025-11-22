@@ -46,7 +46,6 @@ const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
   description: z.string().optional(),
   division: z.string().min(1, { message: "Please select a division" }),
-  ownerName: z.string().min(2, { message: "Owner name is required." }),
   impact: z.enum(impacts),
   deadline: z.date({ required_error: "A deadline is required." }),
 });
@@ -72,7 +71,6 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       name: task.name,
       description: task.description,
       division: task.division,
-      ownerName: task.owner.name,
       impact: task.impact,
       deadline: new Date(task.deadline),
     },
@@ -84,7 +82,6 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       name: values.name,
       description: values.description || "",
       division: values.division as Task['division'],
-      owner: { ...task.owner, name: values.ownerName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),
       subtasks: subtasks
@@ -201,19 +198,12 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="ownerName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Owner</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., John Doe" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormItem>
+                  <FormLabel>Owner</FormLabel>
+                  <FormControl>
+                    <Input disabled value={task.owner.name} />
+                  </FormControl>
+                </FormItem>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <FormField
