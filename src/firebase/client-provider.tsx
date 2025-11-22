@@ -2,9 +2,15 @@
 
 import React, { ReactNode, useMemo } from 'react';
 import { initializeFirebase, FirebaseProvider } from './index';
+import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 
 export const FirebaseClientProvider = ({ children }: { children: ReactNode }) => {
   const firebaseContextValue = useMemo(() => initializeFirebase(), []);
 
-  return <FirebaseProvider value={firebaseContextValue}>{children}</FirebaseProvider>;
+  return (
+    <FirebaseProvider value={firebaseContextValue}>
+      {children}
+      <FirebaseErrorListener />
+    </FirebaseProvider>
+  );
 };

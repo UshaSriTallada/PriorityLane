@@ -10,6 +10,8 @@ import {
   DocumentData,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface UseDocOptions {
   listen?: boolean;
@@ -41,10 +43,15 @@ export function useDoc<T extends DocumentData>(
           setData(null);
         }
         setLoading(false);
+        setError(null);
       },
       (err) => {
-        console.error("Error fetching document: ", err);
-        setError(err);
+        const permissionError = new FirestorePermissionError({
+          path: docRef.path,
+          operation: 'get'
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+        setError(permissionError);
         setLoading(false);
       }
     );
@@ -52,34 +59,42 @@ export function useDoc<T extends DocumentData>(
     return () => unsubscribe();
   }, [docRef]);
 
-  const set = async (newData: T, options?: { merge: boolean }) => {
+  const set = async (newData: T, options?: { merge?: boolean }) => {
     if (!docRef) return;
-    try {
-      await setDoc(docRef, newData, { merge: options?.merge });
-    } catch (e) {
-       console.error(e);
-       setError(e as Error);
-    }
+    setDoc(docRef, newData, { merge: options?.merge }).catch((serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: options?.merge ? 'update' : 'create',
+        requestResourceData: newData,
+      }, serverError);
+      errorEmitter.emit('permission-error', permissionError);
+      setError(permissionError);
+    });
   };
 
   const update = async (updatedData: Partial<T>) => {
     if (!docRef) return;
-    try {
-      await updateDoc(docRef, updatedData);
-    } catch (e) {
-       console.error(e);
-       setError(e as Error);
-    }
+    updateDoc(docRef, updatedData).catch((serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'update',
+        requestResourceData: updatedData,
+      }, serverError);
+      errorEmitter.emit('permission-error', permissionError);
+      setError(permissionError);
+    });
   };
 
   const remove = async () => {
     if (!docRef) return;
-    try {
-      await deleteDoc(docRef);
-    } catch (e) {
-       console.error(e);
-       setError(e as Error);
-    }
+    deleteDoc(docRef).catch((serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path: docRef.path,
+        operation: 'delete',
+      }, serverError);
+      errorEmitter.emit('permission-error', permissionError);
+      setError(permissionError);
+    });
   };
 
   return { data, loading, error, set, update, remove };

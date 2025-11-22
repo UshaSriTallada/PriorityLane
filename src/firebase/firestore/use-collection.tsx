@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
   collection,
   onSnapshot,
@@ -7,16 +7,14 @@ import {
   doc,
   updateDoc,
   deleteDoc,
-  query,
-  orderBy,
-  where,
   writeBatch,
   Query,
   DocumentData,
-  CollectionReference,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { Task } from '@/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 interface UseCollectionOptions<T> {
   orderBy?: keyof T;
@@ -50,10 +48,16 @@ export function useCollection<T extends DocumentData>(
         })) as T[];
         setData(newData);
         setLoading(false);
+        setError(null);
       },
       (err) => {
-        console.error("Error fetching collection: ", err);
-        setError(err);
+        const collectionRef = collectionQuery.withConverter(null)._query.path;
+        const permissionError = new FirestorePermissionError({
+          path: collectionRef.segments.join('/'),
+          operation: 'list'
+        }, err);
+        errorEmitter.emit('permission-error', permissionError);
+        setError(permissionError);
         setLoading(false);
       }
     );
@@ -63,36 +67,48 @@ export function useCollection<T extends DocumentData>(
 
   const add = async (newData: Omit<T, 'id'>) => {
     if (!collectionQuery) return;
-    try {
-      // The query has the collection path. A bit of a hack to get the ref.
-      const collectionRef = collectionQuery.withConverter(null)._query.path;
-      await addDoc(collection(firestore, collectionRef.segments.join('/')), newData);
-    } catch (e) {
-      console.error(e);
-      setError(e as Error);
-    }
+    const collectionRef = collectionQuery.withConverter(null)._query.path;
+    const path = collectionRef.segments.join('/');
+    addDoc(collection(firestore, path), newData).catch((serverError) => {
+      const permissionError = new FirestorePermissionError({
+        path,
+        operation: 'create',
+        requestResourceData: newData,
+      }, serverError);
+      errorEmitter.emit('permission-error', permissionError);
+      setError(permissionError);
+    });
   };
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!collectionQuery) return;
-    try {
-      const collectionRef = collectionQuery.withConverter(null)._query.path;
-      await updateDoc(doc(firestore, collectionRef.segments.join('/'), docId), updatedData);
-    } catch (e) {
-      console.error(e);
-      setError(e as Error);
-    }
+     const collectionRef = collectionQuery.withConverter(null)._query.path;
+     const path = collectionRef.segments.join('/');
+     const docRef = doc(firestore, path, docId);
+     updateDoc(docRef, updatedData).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'update',
+            requestResourceData: updatedData,
+        }, serverError);
+        errorEmitter.emit('permission-error', permissionError);
+        setError(permissionError);
+     });
   };
 
   const remove = async (docId: string) => {
      if (!collectionQuery) return;
-    try {
-       const collectionRef = collectionQuery.withConverter(null)._query.path;
-      await deleteDoc(doc(firestore, collectionRef.segments.join('/'), docId));
-    } catch (e) {
-      console.error(e);
-      setError(e as Error);
-    }
+    const collectionRef = collectionQuery.withConverter(null)._query.path;
+    const path = collectionRef.segments.join('/');
+    const docRef = doc(firestore, path, docId);
+    deleteDoc(docRef).catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: docRef.path,
+            operation: 'delete',
+        }, serverError);
+        errorEmitter.emit('permission-error', permissionError);
+        setError(permissionError);
+    });
   };
   
   const reorder = async (reorderedTasks: Task[]) => {
@@ -102,7 +118,16 @@ export function useCollection<T extends DocumentData>(
       const docRef = doc(firestore, "tasks", task.id);
       batch.update(docRef, { order: index });
     });
-    await batch.commit();
+    
+    batch.commit().catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: 'tasks', // This is a batch, path is more general
+            operation: 'update',
+            requestResourceData: { info: "Batch reorder operation" }
+        }, serverError);
+        errorEmitter.emit('permission-error', permissionError);
+        setError(permissionError);
+    });
   };
 
   return { data, loading, error, add, update, remove, reorder };

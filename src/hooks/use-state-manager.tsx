@@ -9,6 +9,9 @@ import { useCollection } from "@/firebase/firestore/use-collection";
 import { useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
 import { collection, doc, writeBatch, where, query } from "firebase/firestore";
+import { errorEmitter } from "@/firebase/error-emitter";
+import { FirestorePermissionError } from "@/firebase/errors";
+
 
 interface StateContextType {
     tasks: Task[];
@@ -158,8 +161,18 @@ export function StateProvider({ children }: { children: ReactNode }) {
             }
         });
         
-        await batch.commit();
-        router.push(`/dashboard/${newName.toLowerCase()}`);
+        batch.commit()
+            .then(() => {
+                router.push(`/dashboard/${newName.toLowerCase()}`);
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: `users/${user.uid}/divisions` ,
+                    operation: 'update',
+                    requestResourceData: { info: "Batch update for division rename" }
+                }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+            });
     }, [user, firestore, divisionsData, tasks, router]);
 
 
@@ -181,8 +194,18 @@ export function StateProvider({ children }: { children: ReactNode }) {
             batch.delete(divisionRef);
         }
 
-        await batch.commit();
-        router.push('/dashboard');
+        batch.commit()
+            .then(() => {
+                 router.push('/dashboard');
+            })
+            .catch((serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: `users/${user.uid}/divisions`,
+                    operation: 'delete',
+                    requestResourceData: { info: "Batch delete for division" }
+                }, serverError);
+                errorEmitter.emit('permission-error', permissionError);
+            });
     }, [user, firestore, tasks, divisionsData, router]);
 
     const handleTasksReorder = async (activeId: string, overId: string) => {
