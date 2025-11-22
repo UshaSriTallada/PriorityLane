@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { ClipboardList, Users, PlusCircle, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { ClipboardList, Users, PlusCircle, MoreVertical, Edit, Trash2, CheckCircle2 } from 'lucide-react';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -213,6 +213,14 @@ export default function MainNav() {
             <Link href="/dashboard">
               <ClipboardList />
               <span className="group-data-[collapsible=icon]:hidden">All Tasks</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+         <SidebarMenuItem>
+          <SidebarMenuButton asChild isActive={pathname === '/dashboard/done'} tooltip="Done Tasks">
+            <Link href="/dashboard/done">
+              <CheckCircle2 />
+              <span className="group-data-[collapsible=icon]:hidden">Done Tasks</span>
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>

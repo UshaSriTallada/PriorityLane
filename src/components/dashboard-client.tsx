@@ -31,9 +31,10 @@ import { Separator } from "./ui/separator";
 
 interface DashboardClientProps {
   selectedDivision?: string;
+  filter?: 'all' | 'active' | 'completed';
 }
 
-export default function DashboardClient({ selectedDivision }: DashboardClientProps) {
+export default function DashboardClient({ selectedDivision, filter = 'active' }: DashboardClientProps) {
   const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder, onTaskStart, onSubtaskStart } = useStateManager();
   const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [isPending, startTransition] = useTransition();
@@ -45,54 +46,79 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     setCurrentTasks(tasks);
   }, [tasks]);
 
-  const { activeTasks, completedTasks } = useMemo(() => {
-    const tasksToFilter = selectedDivision
+  const { visibleTasks, pageTitle, pageDescription } = useMemo(() => {
+    // 1. Filter by division if one is selected
+    let tasksByDivision = selectedDivision
       ? currentTasks.filter(task => task.division === selectedDivision)
       : currentTasks;
-    
+
+    // 2. Apply AI prioritization if available
     const priorityMap = new Map(currentTasks.map(t => [t.id, { p: t.priority, pr: t.priorityReason }]));
-    
-    const processedTasks = tasksToFilter.map(t => {
+    tasksByDivision = tasksByDivision.map(t => {
       const p = priorityMap.get(t.id);
       return { ...t, priority: p?.p, priorityReason: p?.pr };
     }).sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
 
-    return {
-        activeTasks: processedTasks.filter(t => !t.doneAt),
-        completedTasks: processedTasks.filter(t => !!t.doneAt),
-    };
+    // 3. Filter by status (active/completed/all)
+    let visibleTasks: Task[];
+    let pageTitle = "";
+    let pageDescription = "";
+
+    switch (filter) {
+      case 'completed':
+        visibleTasks = tasksByDivision.filter(t => !!t.doneAt);
+        pageTitle = selectedDivision ? `${selectedDivision} Completed Tasks` : "Completed Tasks";
+        pageDescription = `All completed tasks${selectedDivision ? ` for the ${selectedDivision} division` : ''}.`;
+        break;
+      case 'all':
+        visibleTasks = tasksByDivision;
+        pageTitle = selectedDivision ? `${selectedDivision} Tasks` : "All Tasks";
+        pageDescription = `All active and completed tasks${selectedDivision ? ` for the ${selectedDivision} division` : ''}.`;
+        break;
+      case 'active':
+      default:
+        visibleTasks = tasksByDivision.filter(t => !t.doneAt);
+        pageTitle = selectedDivision ? `${selectedDivision} Active Tasks` : "Active Tasks";
+        pageDescription = `All active tasks${selectedDivision ? ` for the ${selectedDivision} division` : ''}.`;
+        break;
+    }
     
-  }, [selectedDivision, currentTasks]);
+    return { visibleTasks, pageTitle, pageDescription };
+
+  }, [selectedDivision, currentTasks, filter]);
 
   const overdueCount = useMemo(() => {
-    return activeTasks.reduce((count, task) => {
+    return tasks.reduce((count, task) => {
         const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
         if (isTaskOverdue) {
             return count + 1;
         }
         return count;
     }, 0);
-  }, [activeTasks]);
+  }, [tasks]);
 
   const handlePrioritize = () => {
     if (!tasks) return;
     startTransition(async () => {
-      const result = await getTaskPriorities(tasks);
+      // Prioritize only active tasks
+      const activeTasks = tasks.filter(t => !t.doneAt);
+      const result = await getTaskPriorities(activeTasks);
+
       if (result.success && result.data) {
         const priorityMap = new Map(result.data.map(p => [p.taskId, { priority: p.priority, reason: p.reason }]));
         
         const updatedTasks = tasks.map(task => {
           const priorityInfo = priorityMap.get(task.id);
-          return priorityInfo ? { ...task, priority: priorityInfo.priority, priorityReason: priorityInfo.reason } : { ...task, priority: undefined, priorityReason: undefined };
+          // Only apply priority to active tasks that were part of the AI call
+          return (priorityInfo && !task.doneAt) ? { ...task, priority: priorityInfo.priority, priorityReason: priorityInfo.reason } : { ...task, priority: undefined, priorityReason: undefined };
         });
 
-        updatedTasks.sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
-        
+        // The sort is now handled in the useMemo hook
         setCurrentTasks(updatedTasks);
 
         toast({
           title: "Tasks Prioritized!",
-          description: "AI has re-ordered your tasks based on urgency and impact.",
+          description: "AI has re-ordered your active tasks based on urgency and impact.",
         });
       } else {
         toast({
@@ -123,9 +149,6 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     setEditingTask(null);
   };
 
-  const pageTitle = selectedDivision ? `${selectedDivision} Tasks` : "Task Dashboard";
-  const pageDescription = selectedDivision ? `Tasks for the ${selectedDivision} division.` : "Manage and prioritize your factory's workload.";
-
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -141,9 +164,8 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     }
   }
   
-  // Disable drag-and-drop if a division is selected
-  const isDndDisabled = !!selectedDivision;
-
+  // Disable drag-and-drop if a division is selected or showing completed tasks
+  const isDndDisabled = !!selectedDivision || filter === 'completed';
 
   return (
     <>
@@ -157,7 +179,7 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
                   <p className="text-muted-foreground">{pageDescription}</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={handlePrioritize} disabled={isPending}>
+                <Button variant="outline" onClick={handlePrioritize} disabled={isPending || filter === 'completed'}>
                   {isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
@@ -169,16 +191,16 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
               </div>
             </div>
 
-            {activeTasks.length > 0 ? (
+            {visibleTasks.length > 0 ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
                 disabled={isDndDisabled}
               >
-                <SortableContext items={activeTasks} strategy={verticalListSortingStrategy}>
+                <SortableContext items={visibleTasks} strategy={verticalListSortingStrategy}>
                    <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                      {activeTasks.map((task) => (
+                      {visibleTasks.map((task) => (
                           <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
                       ))}
                   </div>
@@ -186,24 +208,9 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
               </DndContext>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-                  <h3 className="text-xl font-semibold">No active tasks</h3>
-                  <p className="text-muted-foreground mt-2">{selectedDivision ? `No active tasks found for the ${selectedDivision} division.` : "Create a task to get started."}</p>
+                  <h3 className="text-xl font-semibold">No tasks found</h3>
+                  <p className="text-muted-foreground mt-2">There are no tasks that match the current filters.</p>
               </div>
-            )}
-
-            {completedTasks.length > 0 && (
-                <div className="mt-12">
-                    <div className="flex items-center gap-4 mb-8">
-                        <Separator className="flex-1" />
-                        <h2 className="text-xl font-semibold tracking-tight">Completed</h2>
-                        <Separator className="flex-1" />
-                    </div>
-                     <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                        {completedTasks.map((task) => (
-                            <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={true} />
-                        ))}
-                    </div>
-                </div>
             )}
           </main>
         </div>

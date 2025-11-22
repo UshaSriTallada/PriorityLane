@@ -1,8 +1,8 @@
 'use client';
 import DashboardClient from '@/components/dashboard-client';
 
-export default function DashboardPage() {
+export default function DoneTasksPage() {
   return (
-    <DashboardClient filter="all" />
+    <DashboardClient filter="completed" />
   );
 }
