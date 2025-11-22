@@ -1,4 +1,4 @@
-import { Bell } from 'lucide-react';
+import { Bell, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,12 +10,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useUser } from '@/firebase';
+import { getAuth, signOut } from 'firebase/auth';
 
 interface HeaderProps {
   overdueCount: number;
 }
 
 export default function Header({ overdueCount }: HeaderProps) {
+  const { user } = useUser();
+  const auth = getAuth();
+
+  const handleLogout = async () => {
+    await signOut(auth);
+    // The useUser hook will redirect to /login automatically
+  };
+
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
       <SidebarTrigger className="md:hidden" />
@@ -50,18 +60,21 @@ export default function Header({ overdueCount }: HeaderProps) {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-10 w-10">
-                <AvatarImage src="https://picsum.photos/seed/1/40/40" data-ai-hint="person face" alt="CTO Avatar" />
-                <AvatarFallback>CTO</AvatarFallback>
+                <AvatarImage src={user?.photoURL || "https://picsum.photos/seed/1/40/40"} data-ai-hint="person face" alt="User Avatar" />
+                <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
+            <DropdownMenuLabel>{user?.displayName || user?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

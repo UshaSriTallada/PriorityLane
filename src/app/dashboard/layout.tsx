@@ -10,14 +10,16 @@ import {
 import { Factory } from 'lucide-react';
 import Link from 'next/link';
 import { StateProvider } from '@/hooks/use-state-manager';
+import { useUser } from '@/firebase';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+import { Loader2 } from 'lucide-react';
 
 function DashboardNav() {
-    // This component no longer needs to manage providers.
-    // The state is managed globally by StateProvider in the layout.
     return <MainNav />;
 }
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <StateProvider>
             <SidebarProvider>
@@ -40,4 +42,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </SidebarProvider>
         </StateProvider>
     );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+    const { user, loading } = useUser();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && !user) {
+            router.push('/login');
+        }
+    }, [user, loading, router]);
+
+    if (loading || !user) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+    
+    return <ProtectedDashboardLayout>{children}</ProtectedDashboardLayout>;
 }
