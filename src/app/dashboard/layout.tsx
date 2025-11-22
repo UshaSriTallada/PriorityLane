@@ -1,3 +1,4 @@
+
 'use client';
 import MainNav from '@/components/main-nav';
 import {
@@ -37,31 +38,29 @@ function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
       }, [tasks]);
 
     return (
-        <StateProvider>
-            <SidebarProvider>
-                <Sidebar>
-                    <SidebarHeader>
-                        <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                            <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-                                <Factory className="h-6 w-6 text-primary" />
-                                <span className="group-data-[collapsible=icon]:hidden">FactoryFlow</span>
-                            </Link>
-                        </div>
-                    </SidebarHeader>
-                    <SidebarContent className="p-2">
-                        <DashboardNav />
-                    </SidebarContent>
-                </Sidebar>
-                <SidebarInset>
-                    <div className="flex h-screen flex-col">
-                        <Header overdueCount={overdueCount} />
-                        <div className="flex-1 overflow-y-auto">
-                            {children}
-                        </div>
+        <SidebarProvider>
+            <Sidebar>
+                <SidebarHeader>
+                    <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                            <Factory className="h-6 w-6 text-primary" />
+                            <span className="group-data-[collapsible=icon]:hidden">FactoryFlow</span>
+                        </Link>
                     </div>
-                </SidebarInset>
-            </SidebarProvider>
-        </StateProvider>
+                </SidebarHeader>
+                <SidebarContent className="p-2">
+                    <DashboardNav />
+                </SidebarContent>
+            </Sidebar>
+            <SidebarInset>
+                <div className="flex h-screen flex-col">
+                    <Header overdueCount={overdueCount} />
+                    <div className="flex-1 overflow-y-auto">
+                        {children}
+                    </div>
+                </div>
+            </SidebarInset>
+        </SidebarProvider>
     );
 }
 
@@ -83,5 +82,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         );
     }
     
-    return <ProtectedDashboardLayout>{children}</ProtectedDashboardLayout>;
+    return (
+        <StateProvider>
+            <ProtectedDashboardLayout>{children}</ProtectedDashboardLayout>
+        </StateProvider>
+    );
 }
