@@ -137,7 +137,7 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtask
                                         </div>
                                     )}
                                 </div>
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1">
+                                <div className="flex flex-col items-start gap-1 text-xs text-muted-foreground mt-1">
                                     <TooltipProvider>
                                         <Tooltip>
                                             <TooltipTrigger className="flex items-center gap-1">
@@ -155,7 +155,7 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtask
                                             Start
                                         </Button>
                                     )}
-                                    {subtask.startedAt && !subtask.completedAt && (
+                                    {subtask.startedAt && (
                                         <TooltipProvider>
                                             <Tooltip>
                                                 <TooltipTrigger className="flex items-center gap-1 text-green-600">
