@@ -69,7 +69,7 @@ function AddDivisionDialog() {
                 <DialogHeader>
                     <DialogTitle>Add New Division</DialogTitle>
                     <DialogDescription>
-                        Enter the name for the new division.
+                        Enter the name for the new division. e.g., Operations, Production
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit}>
@@ -188,7 +188,7 @@ function DivisionActions({ divisionName }: { divisionName: string }) {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the "{divisionName}" division. This action cannot be undone. Any tasks in this division will need to be reassigned.
+                            This will permanently delete the "{divisionName}" division and all associated tasks. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

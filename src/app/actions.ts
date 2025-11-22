@@ -19,6 +19,9 @@ const PrioritizationResultSchema = z.object({
 type PrioritizationResult = z.infer<typeof PrioritizationResultSchema>;
 
 export async function getTaskPriorities(tasks: Task[]): Promise<PrioritizationResult> {
+  if (!tasks || tasks.length === 0) {
+    return { success: true, data: [] };
+  }
   // Map the Task[] to the PrioritizeTasksInput schema
   const aiInput: PrioritizeTasksInput = {
     tasks: tasks.map(task => ({

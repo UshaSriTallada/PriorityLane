@@ -18,6 +18,7 @@ export type Subtask = {
 
 export type Task = {
   id: string;
+  userId: string; // To associate task with a user
   name: string;
   description: string;
   deadline: string;
@@ -31,4 +32,5 @@ export type Task = {
   subtasks: Subtask[];
   priority?: number;
   priorityReason?: string;
+  order?: number;
 };

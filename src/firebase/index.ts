@@ -5,8 +5,10 @@ import { firebaseConfig } from './config';
 
 // Hooks and providers
 import { useUser } from './auth/use-user';
-import { FirebaseProvider } from './provider';
+import { FirebaseProvider, useFirebaseApp, useFirestore, useAuth } from './provider';
 import { FirebaseClientProvider } from './client-provider';
+import { useCollection } from './firestore/use-collection';
+import { useDoc } from './firestore/use-doc';
 
 
 let firebaseApp: FirebaseApp;
@@ -30,5 +32,10 @@ export {
   initializeFirebase,
   FirebaseProvider,
   FirebaseClientProvider,
-  useUser
+  useUser,
+  useFirebaseApp,
+  useFirestore,
+  useAuth,
+  useCollection,
+  useDoc
 };

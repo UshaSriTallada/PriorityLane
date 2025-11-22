@@ -25,7 +25,6 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableTaskItem } from './sortable-task-item';
-import { Separator } from "./ui/separator";
 import { useUser } from "@/firebase";
 
 interface DashboardClientProps {
@@ -49,17 +48,27 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
   const { visibleTasks, pageTitle, pageDescription } = useMemo(() => {
     // 1. Filter by division if one is selected
     let tasksByDivision = selectedDivision
-      ? currentTasks.filter(task => task.division === selectedDivision)
+      ? currentTasks.filter(task => task.division.toLowerCase() === selectedDivision.toLowerCase())
       : currentTasks;
-
+  
     // 2. Apply AI prioritization if available
     const priorityMap = new Map(currentTasks.map(t => [t.id, { p: t.priority, pr: t.priorityReason }]));
     tasksByDivision = tasksByDivision.map(t => {
-      const p = priorityMap.get(t.id);
-      return { ...t, priority: p?.p, priorityReason: p?.pr };
-    }).sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
+        const p = priorityMap.get(t.id);
+        return { ...t, priority: p?.p, priorityReason: p?.pr };
+    });
 
-    // 3. Filter by status (active/completed/all)
+    // 3. Sort by priority if available, otherwise by original order
+    tasksByDivision.sort((a, b) => {
+        if (a.priority !== undefined && b.priority !== undefined) {
+            return a.priority - b.priority;
+        }
+        if (a.priority !== undefined) return -1;
+        if (b.priority !== undefined) return 1;
+        return (a.order ?? 0) - (b.order ?? 0);
+    });
+
+    // 4. Filter by status (active/completed/all)
     let visibleTasks: Task[];
     let pageTitle = "";
     let pageDescription = "";
@@ -86,6 +95,7 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
     return { visibleTasks, pageTitle, pageDescription };
 
   }, [selectedDivision, currentTasks, filter]);
+
 
   const handlePrioritize = () => {
     if (!tasks) return;
@@ -120,26 +130,12 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
     });
   };
 
-  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'| 'owner' | 'startedAt' | 'createdAt'>) => {
+  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'| 'owner' | 'startedAt' | 'createdAt' | 'userId'>) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in to create a task.' });
       return;
     }
-
-    const newOwner = {
-        name: user.displayName || user.email || 'Anonymous',
-        avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/32/32`,
-    };
-
-    const newTask: Task = {
-        ...newTaskData,
-        id: `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
-        subtasks: [],
-        dependencies: [],
-        owner: newOwner,
-        createdAt: new Date().toISOString()
-    };
-    onTaskCreate(newTask);
+    onTaskCreate(newTaskData);
   };
 
   const handleTaskUpdate = (updatedTask: Task) => {
@@ -193,7 +189,7 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
             onDragEnd={handleDragEnd}
             disabled={isDndDisabled}
           >
-            <SortableContext items={visibleTasks} strategy={verticalListSortingStrategy}>
+            <SortableContext items={visibleTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {visibleTasks.map((task) => (
                       <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
@@ -204,7 +200,7 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
         ) : (
           <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
               <h3 className="text-xl font-semibold">No tasks found</h3>
-              <p className="text-muted-foreground mt-2">There are no tasks that match the current filters.</p>
+              <p className="text-muted-foreground mt-2">Get started by creating a new task.</p>
           </div>
         )}
       </main>

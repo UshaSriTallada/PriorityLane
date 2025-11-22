@@ -1,18 +1,19 @@
 
 'use client';
-import { createContext, useContext, ReactNode, useState, useCallback } from "react";
+import { createContext, useContext, ReactNode, useState, useCallback, useEffect } from "react";
 import type { Task } from "@/types";
-import { initialTasks } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { arrayMove } from "@dnd-kit/sortable";
-
-const initialDivisions = Array.from(new Set(initialTasks.map(task => task.division)));
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { useUser } from "@/firebase";
+import { useFirestore } from "@/firebase/provider";
+import { collection, doc, writeBatch, where, query } from "firebase/firestore";
 
 interface StateContextType {
     tasks: Task[];
     divisions: Task['division'][];
-    onTaskCreate: (newTask: Task) => void;
+    onTaskCreate: (newTask: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason' | 'startedAt' | 'createdAt' | 'userId'>) => void;
     onTaskUpdate: (updatedTask: Task) => void;
     onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
     onTaskStart: (taskId: string) => void;
@@ -26,128 +27,174 @@ interface StateContextType {
 const StateContext = createContext<StateContextType | undefined>(undefined);
 
 export function StateProvider({ children }: { children: ReactNode }) {
-    const [tasks, setTasks] = useState<Task[]>(initialTasks);
-    const [divisions, setDivisions] = useState<Task['division'][]>(initialDivisions);
+    const { user } = useUser();
+    const firestore = useFirestore();
     const router = useRouter();
     const { toast } = useToast();
 
-    const handleAddTask = (newTask: Task) => {
-        setTasks(prev => [newTask, ...prev]);
+    // Firestore data hooks
+    const tasksQuery = user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null;
+    const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(tasksQuery, {
+      orderBy: 'order',
+      listen: true,
+    });
+
+    const divisionsQuery = user ? query(collection(firestore, 'users', user.uid, 'divisions')) : null;
+    const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<{name: string}>(divisionsQuery);
+    
+    const divisions = divisionsData.map(d => d.name as Task['division']);
+
+    const handleAddTask = async (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason'| 'startedAt' | 'createdAt' | 'userId'>) => {
+        if (!user) return;
+        const newOwner = {
+            name: user.displayName || user.email || 'Anonymous',
+            avatarUrl: user.photoURL || `https://picsum.photos/seed/${user.uid}/32/32`,
+        };
+        const newTask: Omit<Task, 'id'> = {
+            ...newTaskData,
+            userId: user.uid,
+            subtasks: [],
+            dependencies: [],
+            owner: newOwner,
+            createdAt: new Date().toISOString(),
+            order: tasks.length
+        };
+        await addTask(newTask);
         toast({
             title: "Task Created",
             description: `"${newTask.name}" has been added to your list.`,
         });
     };
 
-    const handleUpdateTask = (updatedTask: Task) => {
-        setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    const handleUpdateTask = async (updatedTask: Task) => {
+        await updateTask(updatedTask.id, updatedTask);
         toast({
             title: "Task Updated",
             description: `"${updatedTask.name}" has been successfully updated.`,
         });
     };
 
-    const handleSubtaskChange = (taskId: string, subtaskId: string, completed: boolean) => {
-        setTasks(prev => prev.map(task => {
-            if (task.id === taskId) {
-                const updatedSubtasks = task.subtasks.map(sub => {
-                    if (sub.id === subtaskId) {
-                        return { 
-                            ...sub, 
-                            completed,
-                            completedAt: completed ? new Date().toISOString() : undefined,
-                         };
-                    }
-                    return sub;
-                });
+    const handleSubtaskChange = async (taskId: string, subtaskId: string, completed: boolean) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
 
-                const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
-                
-                let doneAt = task.doneAt;
-                if (allSubtasksCompleted && !task.doneAt) {
-                    doneAt = new Date().toISOString();
-                     toast({
-                        title: "Task Completed!",
-                        description: `"${task.name}" is now finished.`,
-                    });
-                } else if (!allSubtasksCompleted && task.doneAt) {
-                    doneAt = undefined;
-                }
-
-                return {
-                    ...task,
-                    subtasks: updatedSubtasks,
-                    doneAt: doneAt,
-                };
+        const updatedSubtasks = task.subtasks.map(sub => {
+            if (sub.id === subtaskId) {
+                return { 
+                    ...sub, 
+                    completed,
+                    completedAt: completed ? new Date().toISOString() : undefined,
+                 };
             }
-            return task;
-        }));
+            return sub;
+        });
+
+        const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
+        
+        let doneAt = task.doneAt;
+        if (allSubtasksCompleted && !task.doneAt) {
+            doneAt = new Date().toISOString();
+             toast({
+                title: "Task Completed!",
+                description: `"${task.name}" is now finished.`,
+            });
+        } else if (!allSubtasksCompleted && task.doneAt) {
+            doneAt = undefined;
+        }
+
+        await updateTask(taskId, { subtasks: updatedSubtasks, doneAt });
     };
     
-    const handleTaskStart = (taskId: string) => {
-        setTasks(prev => prev.map(task => {
-            if (task.id === taskId && !task.startedAt) {
-                toast({
-                    title: "Task Started",
-                    description: `"${task.name}" has been marked as started.`,
-                });
-                return { ...task, startedAt: new Date().toISOString() };
-            }
-            return task;
-        }));
-    };
-
-    const handleSubtaskStart = (taskId: string, subtaskId: string) => {
-        setTasks(prev => prev.map(task => {
-            if (task.id === taskId) {
-                const updatedSubtasks = task.subtasks.map(sub => {
-                    if (sub.id === subtaskId && !sub.startedAt) {
-                        toast({
-                            title: "Subtask Started",
-                            description: `Subtask "${sub.name}" has been started.`,
-                        });
-                        return { ...sub, startedAt: new Date().toISOString() };
-                    }
-                    return sub;
-                });
-                return { ...task, subtasks: updatedSubtasks };
-            }
-            return task;
-        }));
-    };
-
-    const handleAddDivision = useCallback((name: string) => {
-        if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
-            setDivisions(prev => [...prev, name as Task['division']]);
+    const handleTaskStart = async (taskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (task && !task.startedAt) {
+            await updateTask(taskId, { startedAt: new Date().toISOString() });
+            toast({
+                title: "Task Started",
+                description: `"${task.name}" has been marked as started.`,
+            });
         }
-    }, [divisions]);
+    };
 
-    const handleUpdateDivision = useCallback((oldName: string, newName: string) => {
-        setDivisions(prev => prev.map(d => (d === oldName ? (newName as Task['division']) : d)));
-        
-        setTasks(prevTasks => prevTasks.map(task => {
-            if (task.division === oldName) {
-                return { ...task, division: newName as Task['division'] };
+    const handleSubtaskStart = async (taskId: string, subtaskId: string) => {
+        const task = tasks.find(t => t.id === taskId);
+        if (!task) return;
+        const updatedSubtasks = task.subtasks.map(sub => {
+            if (sub.id === subtaskId && !sub.startedAt) {
+                toast({
+                    title: "Subtask Started",
+                    description: `Subtask "${sub.name}" has been started.`,
+                });
+                return { ...sub, startedAt: new Date().toISOString() };
             }
-            return task;
-        }));
-        
-        router.push(`/dashboard/${newName.toLowerCase()}`);
-    }, [router]);
-
-    const handleDeleteDivision = useCallback((name: string) => {
-        setTasks(prevTasks => prevTasks.filter(task => task.division !== name));
-        setDivisions(prev => prev.filter(d => d !== name));
-        router.push('/dashboard');
-    }, [router]);
-
-    const handleTasksReorder = (activeId: string, overId: string) => {
-        setTasks((items) => {
-          const oldIndex = items.findIndex((item) => item.id === activeId);
-          const newIndex = items.findIndex((item) => item.id === overId);
-          return arrayMove(items, oldIndex, newIndex);
+            return sub;
         });
-      };
+        await updateTask(taskId, { subtasks: updatedSubtasks });
+    };
+    
+    const handleAddDivision = useCallback(async (name: string) => {
+        if (!user) return;
+        if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
+            await addDivisionDoc({ name });
+        }
+    }, [user, divisions, addDivisionDoc]);
+
+    const handleUpdateDivision = useCallback(async (oldName: string, newName: string) => {
+        if (!user) return;
+        const batch = writeBatch(firestore);
+        
+        // Update division document
+        const divisionDoc = divisionsData.find(d => d.name === oldName);
+        if (divisionDoc) {
+            const divisionRef = doc(firestore, 'users', user.uid, 'divisions', divisionDoc.id);
+            batch.update(divisionRef, { name: newName });
+        }
+
+        // Update tasks with the old division name
+        tasks.forEach(task => {
+            if (task.division === oldName) {
+                const taskRef = doc(firestore, 'tasks', task.id);
+                batch.update(taskRef, { division: newName });
+            }
+        });
+        
+        await batch.commit();
+        router.push(`/dashboard/${newName.toLowerCase()}`);
+    }, [user, firestore, divisionsData, tasks, router]);
+
+
+    const handleDeleteDivision = useCallback(async (name: string) => {
+        if (!user) return;
+        const batch = writeBatch(firestore);
+
+        // Delete tasks in that division
+        const tasksToDelete = tasks.filter(task => task.division === name);
+        tasksToDelete.forEach(task => {
+            const taskRef = doc(firestore, 'tasks', task.id);
+            batch.delete(taskRef);
+        });
+
+        // Delete the division document
+        const divisionDoc = divisionsData.find(d => d.name === name);
+        if (divisionDoc) {
+            const divisionRef = doc(firestore, 'users', user.uid, 'divisions', divisionDoc.id);
+            batch.delete(divisionRef);
+        }
+
+        await batch.commit();
+        router.push('/dashboard');
+    }, [user, firestore, tasks, divisionsData, router]);
+
+    const handleTasksReorder = async (activeId: string, overId: string) => {
+        const oldIndex = tasks.findIndex((item) => item.id === activeId);
+        const newIndex = tasks.findIndex((item) => item.id === overId);
+        const newTasks = arrayMove(tasks, oldIndex, newIndex);
+        
+        // Update order property
+        const tasksToUpdate = newTasks.map((task, index) => ({ ...task, order: index }));
+
+        await reorderTasks(tasksToUpdate);
+    };
 
     const value = {
         tasks,

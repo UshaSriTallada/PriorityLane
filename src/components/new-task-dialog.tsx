@@ -52,17 +52,16 @@ const taskSchema = z.object({
 });
 
 interface NewTaskDialogProps {
-  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies'| 'owner' | 'priority' | 'priorityReason' | 'startedAt' | 'createdAt'>) => void;
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies'| 'owner' | 'priority' | 'priorityReason' | 'startedAt' | 'createdAt' | 'userId'>) => void;
 }
 
 export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
   const [open, setOpen] = useState(false);
   const { divisions } = useDivisions();
-  const { user } = useUser();
-
+  
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema.extend({
-        division: z.enum(divisions as [string, ...string[]], {
+        division: z.enum((divisions.length > 0 ? divisions : ['']) as [string, ...string[]], {
             errorMap: () => ({ message: "Please select a division." }),
         })
     })),
@@ -76,13 +75,16 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
 
   // Keep defaultValues in sync with divisions
   useEffect(() => {
-    if (!form.getValues('division') && divisions.length > 0) {
+    if (divisions.length > 0) {
         form.reset({
-            ...form.getValues(),
+            name: "",
+            description: "",
             division: divisions[0],
+            impact: "Medium",
+            deadline: undefined
         });
     }
-  }, [divisions, form]);
+  }, [divisions, form, open]);
 
   function onSubmit(values: z.infer<typeof taskSchema>) {
     onTaskCreate({
@@ -108,7 +110,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
         <DialogHeader>
           <DialogTitle>Create New Task</DialogTitle>
           <DialogDescription>
-            Fill in the details below to create a new task for your team. The task will be assigned to you.
+            Fill in the details below to create a new task. It will be assigned to you.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -133,7 +135,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                 <FormItem>
                   <FormLabel>Description</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Add a detailed description for the owner..." className="resize-none" {...field} />
+                    <Textarea placeholder="Add a detailed description..." className="resize-none" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -148,7 +150,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                     <FormLabel>Division</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger disabled={divisions.length === 0}>
                           <SelectValue placeholder="Select a division" />
                         </SelectTrigger>
                       </FormControl>
@@ -156,6 +158,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                         {divisions.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                       </SelectContent>
                     </Select>
+                    {divisions.length === 0 && <p className="text-xs text-muted-foreground">Create a division first.</p>}
                     <FormMessage />
                   </FormItem>
                 )}
