@@ -27,6 +27,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { SortableTaskItem } from './sortable-task-item';
+import { Separator } from "./ui/separator";
 
 interface DashboardClientProps {
   selectedDivision?: string;
@@ -44,30 +45,34 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     setCurrentTasks(tasks);
   }, [tasks]);
 
-  const filteredTasks = useMemo(() => {
+  const { activeTasks, completedTasks } = useMemo(() => {
     const tasksToFilter = selectedDivision
       ? currentTasks.filter(task => task.division === selectedDivision)
       : currentTasks;
     
-    // Create a stable priority map
     const priorityMap = new Map(currentTasks.map(t => [t.id, { p: t.priority, pr: t.priorityReason }]));
     
-    return tasksToFilter.map(t => {
+    const processedTasks = tasksToFilter.map(t => {
       const p = priorityMap.get(t.id);
       return { ...t, priority: p?.p, priorityReason: p?.pr };
     }).sort((a, b) => (a.priority ?? Infinity) - (b.priority ?? Infinity));
+
+    return {
+        activeTasks: processedTasks.filter(t => !t.doneAt),
+        completedTasks: processedTasks.filter(t => !!t.doneAt),
+    };
     
   }, [selectedDivision, currentTasks]);
 
   const overdueCount = useMemo(() => {
-    return filteredTasks.reduce((count, task) => {
-        const isTaskOverdue = !task.subtasks.every(st => st.completed) && isPast(new Date(task.deadline));
+    return activeTasks.reduce((count, task) => {
+        const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
         if (isTaskOverdue) {
             return count + 1;
         }
         return count;
     }, 0);
-  }, [filteredTasks]);
+  }, [activeTasks]);
 
   const handlePrioritize = () => {
     if (!tasks) return;
@@ -164,16 +169,16 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
               </div>
             </div>
 
-            {filteredTasks.length > 0 ? (
+            {activeTasks.length > 0 ? (
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
                 onDragEnd={handleDragEnd}
                 disabled={isDndDisabled}
               >
-                <SortableContext items={filteredTasks} strategy={verticalListSortingStrategy}>
-                   <div className="grid items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                      {filteredTasks.map((task) => (
+                <SortableContext items={activeTasks} strategy={verticalListSortingStrategy}>
+                   <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                      {activeTasks.map((task) => (
                           <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
                       ))}
                   </div>
@@ -181,9 +186,24 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
               </DndContext>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-24 text-center">
-                  <h3 className="text-xl font-semibold">No tasks yet</h3>
-                  <p className="text-muted-foreground mt-2">{selectedDivision ? `No tasks found for the ${selectedDivision} division.` : "Create your first task to get started."}</p>
+                  <h3 className="text-xl font-semibold">No active tasks</h3>
+                  <p className="text-muted-foreground mt-2">{selectedDivision ? `No active tasks found for the ${selectedDivision} division.` : "Create a task to get started."}</p>
               </div>
+            )}
+
+            {completedTasks.length > 0 && (
+                <div className="mt-12">
+                    <div className="flex items-center gap-4 mb-8">
+                        <Separator className="flex-1" />
+                        <h2 className="text-xl font-semibold tracking-tight">Completed</h2>
+                        <Separator className="flex-1" />
+                    </div>
+                     <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                        {completedTasks.map((task) => (
+                            <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={true} />
+                        ))}
+                    </div>
+                </div>
             )}
           </main>
         </div>
