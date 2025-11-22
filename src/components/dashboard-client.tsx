@@ -33,7 +33,7 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ selectedDivision, filter = 'active' }: DashboardClientProps) {
-  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder, onTaskStart, onSubtaskStart } = useStateManager();
+  const { tasks, onTaskCreate, onTaskUpdate, onTaskDelete, onSubtaskChange, onTasksReorder, onTaskStart, onSubtaskStart } = useStateManager();
   const { user } = useUser();
   const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [isPending, startTransition] = useTransition();
@@ -192,7 +192,7 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
             <SortableContext items={visibleTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {visibleTasks.map((task) => (
-                      <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
+                      <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskDelete={onTaskDelete} onTaskStart={onTaskStart} onSubtaskStart={onSubtaskStart} disabled={isDndDisabled} />
                   ))}
               </div>
             </SortableContext>

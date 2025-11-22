@@ -19,6 +19,7 @@ interface StateContextType {
     divisions: Task['division'][];
     onTaskCreate: (newTask: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason' | 'startedAt' | 'createdAt' | 'userId'>) => void;
     onTaskUpdate: (updatedTask: Task) => void;
+    onTaskDelete: (taskId: string) => void;
     onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
     onTaskStart: (taskId: string) => void;
     onSubtaskStart: (taskId: string, subtaskId: string) => void;
@@ -84,6 +85,17 @@ export function StateProvider({ children }: { children: ReactNode }) {
             title: "Task Updated",
             description: `"${updatedTask.name}" has been successfully updated.`,
         });
+    };
+
+    const handleTaskDelete = async (taskId: string) => {
+        const taskToDelete = tasks.find(t => t.id === taskId);
+        if (taskToDelete) {
+            await removeTask(taskId);
+            toast({
+                title: "Task Deleted",
+                description: `"${taskToDelete.name}" has been removed.`,
+            });
+        }
     };
 
     const handleSubtaskChange = async (taskId: string, subtaskId: string, completed: boolean) => {
@@ -233,6 +245,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
         divisions,
         onTaskCreate: handleAddTask,
         onTaskUpdate: handleUpdateTask,
+        onTaskDelete: handleTaskDelete,
         onSubtaskChange: handleSubtaskChange,
         onTaskStart: handleTaskStart,
         onSubtaskStart: handleSubtaskStart,

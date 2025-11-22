@@ -1,5 +1,6 @@
 
 import { Task } from "@/types";
+import { useState } from "react";
 import {
   Card,
   CardContent,
@@ -14,14 +15,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { format, isPast, formatDistanceToNow } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus, CheckCircle2 } from "lucide-react";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus, CheckCircle2, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "./ui/alert-dialog";
+
 
 interface TaskCardProps {
   task: Task;
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
   onEdit: (task: Task) => void;
+  onDelete: (taskId: string) => void;
   onTaskStart: (taskId: string) => void;
   onSubtaskStart: (taskId: string, subtaskId: string) => void;
   className?: string;
@@ -41,11 +45,12 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtaskStart, className }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit, onDelete, onTaskStart, onSubtaskStart, className }: TaskCardProps) {
   const isTaskOverdue = !task.doneAt && isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
   const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : (task.doneAt ? 100 : 0);
   const isCompleted = !!task.doneAt;
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   return (
     <Card className={cn("border-destructive/50 ring-1 ring-destructive/20", isCompleted && "bg-muted/50", "transition-shadow hover:shadow-md dark:hover:shadow-primary/10 flex flex-col", className)}>
@@ -60,6 +65,26 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtask
                     <Edit className="h-4 w-4" />
                     <span className="sr-only">Edit Task</span>
                 </Button>
+                <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                            <span className="sr-only">Delete Task</span>
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the task "{task.name}". This action cannot be undone.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(task.id)} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
                 {task.priority !== undefined && (
                     <TooltipProvider>
                         <Tooltip>
@@ -135,6 +160,7 @@ export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart, onSubtask
                                             <User className="h-3 w-3 text-muted-foreground"/>
                                             <span>{subtask.assignee.name}</span>
                                         </div>
+
                                     )}
                                 </div>
                                 <div className="flex flex-col items-start gap-1 text-xs text-muted-foreground mt-1">
