@@ -33,7 +33,7 @@ interface DashboardClientProps {
 }
 
 export default function DashboardClient({ selectedDivision }: DashboardClientProps) {
-  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder } = useStateManager();
+  const { tasks, onTaskCreate, onTaskUpdate, onSubtaskChange, onTasksReorder, onTaskStart } = useStateManager();
   const [currentTasks, setCurrentTasks] = useState<Task[]>(tasks);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -99,7 +99,7 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
     });
   };
 
-  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'>) => {
+  const handleTaskCreate = (newTaskData: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'priority' | 'priorityReason'| 'owner' | 'startedAt'> & { owner: {name: string}}) => {
     const newTask: Task = {
         ...newTaskData,
         id: `TASK-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -174,7 +174,7 @@ export default function DashboardClient({ selectedDivision }: DashboardClientPro
                 <SortableContext items={filteredTasks} strategy={verticalListSortingStrategy}>
                    <div className="grid items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                       {filteredTasks.map((task) => (
-                          <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} disabled={isDndDisabled} />
+                          <SortableTaskItem key={task.id} id={task.id} task={task} onSubtaskChange={onSubtaskChange} onEdit={() => setEditingTask(task)} onTaskStart={onTaskStart} disabled={isDndDisabled} />
                       ))}
                   </div>
                 </SortableContext>

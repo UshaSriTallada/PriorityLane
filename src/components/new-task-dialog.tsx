@@ -52,7 +52,7 @@ const taskSchema = z.object({
 });
 
 interface NewTaskDialogProps {
-  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason'> & { owner: { name: string } }) => void;
+  onTaskCreate: (task: Omit<Task, 'id' | 'subtasks' | 'dependencies' | 'owner' | 'priority' | 'priorityReason' | 'startedAt'> & { owner: { name: string } }) => void;
 }
 
 export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
@@ -92,6 +92,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
       owner: { name: values.ownerName },
       impact: values.impact,
       deadline: values.deadline.toISOString(),
+      createdAt: new Date().toISOString(),
     });
     form.reset();
     setOpen(false);

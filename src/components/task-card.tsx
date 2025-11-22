@@ -13,8 +13,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { format, isPast } from "date-fns";
-import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User } from "lucide-react";
+import { format, isPast, formatDistanceToNow } from "date-fns";
+import { Calendar, Clock, ShieldAlert, Sparkles, Users, Edit, User, PlayCircle, CalendarPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 
@@ -22,6 +22,7 @@ interface TaskCardProps {
   task: Task;
   onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
   onEdit: (task: Task) => void;
+  onTaskStart: (taskId: string) => void;
 }
 
 const impactVariantMap: Record<Task['impact'], 'destructive' | 'secondary' | 'outline'> = {
@@ -38,7 +39,7 @@ const divisionColorMap: Record<Task['division'], string> = {
     'Logistics': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 border-indigo-200 dark:border-indigo-700'
 }
 
-export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
+export function TaskCard({ task, onSubtaskChange, onEdit, onTaskStart }: TaskCardProps) {
   const isTaskOverdue = isPast(new Date(task.deadline));
   const completedSubtasks = task.subtasks.filter(st => st.completed).length;
   const progress = task.subtasks.length > 0 ? (completedSubtasks / task.subtasks.length) * 100 : 0;
@@ -75,7 +76,7 @@ export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex justify-between items-center text-sm text-muted-foreground">
+        <div className="flex justify-between items-center text-sm text-muted-foreground flex-wrap gap-2">
             <div className={cn("flex items-center gap-2", isTaskOverdue && "text-destructive font-medium")}>
                 <Calendar className="h-4 w-4" />
                 <span>{format(new Date(task.deadline), "MMM d, yyyy")}</span>
@@ -141,9 +142,44 @@ export function TaskCard({ task, onSubtaskChange, onEdit }: TaskCardProps) {
           </Accordion>
         )}
       </CardContent>
-      <CardFooter className="mt-auto flex justify-start gap-2 pt-4">
-        <Badge className={cn(divisionColorMap[task.division] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border-gray-200 dark:border-gray-700')}><Users className="h-3 w-3 mr-1.5"/>{task.division}</Badge>
-        <Badge variant={impactVariantMap[task.impact]}><ShieldAlert className="h-3 w-3 mr-1.5"/>{task.impact}</Badge>
+      <CardFooter className="mt-auto flex flex-wrap justify-between items-center gap-2 pt-4">
+        <div className="flex items-center gap-2">
+            <Badge className={cn(divisionColorMap[task.division] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border-gray-200 dark:border-gray-700')}><Users className="h-3 w-3 mr-1.5"/>{task.division}</Badge>
+            <Badge variant={impactVariantMap[task.impact]}><ShieldAlert className="h-3 w-3 mr-1.5"/>{task.impact}</Badge>
+        </div>
+
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger className="flex items-center gap-1.5">
+                        <CalendarPlus className="h-3.5 w-3.5" />
+                        Created {formatDistanceToNow(new Date(task.createdAt), { addSuffix: true })}
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        {format(new Date(task.createdAt), "PPP p")}
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+
+            {task.startedAt ? (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger className="flex items-center gap-1.5">
+                            <PlayCircle className="h-3.5 w-3.5 text-green-600" />
+                            Started {formatDistanceToNow(new Date(task.startedAt), { addSuffix: true })}
+                        </TooltipTrigger>
+                        <TooltipContent>
+                             {format(new Date(task.startedAt), "PPP p")}
+                        </TooltipContent>
+                    </Tooltip>
+                </TooltipProvider>
+            ) : (
+                <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => onTaskStart(task.id)}>
+                    <PlayCircle className="h-3.5 w-3.5 mr-1.5" />
+                    Start Task
+                </Button>
+            )}
+        </div>
       </CardFooter>
     </Card>
   );

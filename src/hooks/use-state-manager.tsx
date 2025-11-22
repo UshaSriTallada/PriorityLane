@@ -1,3 +1,4 @@
+
 'use client';
 import { createContext, useContext, ReactNode, useState, useCallback } from "react";
 import type { Task } from "@/types";
@@ -14,6 +15,7 @@ interface StateContextType {
     onTaskCreate: (newTask: Task) => void;
     onTaskUpdate: (updatedTask: Task) => void;
     onSubtaskChange: (taskId: string, subtaskId: string, completed: boolean) => void;
+    onTaskStart: (taskId: string) => void;
     onDivisionCreate: (name: string) => void;
     onDivisionUpdate: (oldName: string, newName: string) => void;
     onDivisionDelete: (name: string) => void;
@@ -58,6 +60,19 @@ export function StateProvider({ children }: { children: ReactNode }) {
         }));
     };
     
+    const handleTaskStart = (taskId: string) => {
+        setTasks(prev => prev.map(task => {
+            if (task.id === taskId && !task.startedAt) {
+                toast({
+                    title: "Task Started",
+                    description: `"${task.name}" has been marked as started.`,
+                });
+                return { ...task, startedAt: new Date().toISOString() };
+            }
+            return task;
+        }));
+    };
+
     const handleAddDivision = useCallback((name: string) => {
         if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
             setDivisions(prev => [...prev, name as Task['division']]);
@@ -78,8 +93,8 @@ export function StateProvider({ children }: { children: ReactNode }) {
     }, [router]);
 
     const handleDeleteDivision = useCallback((name: string) => {
-        setDivisions(prev => prev.filter(d => d !== name));
         setTasks(prevTasks => prevTasks.filter(task => task.division !== name));
+        setDivisions(prev => prev.filter(d => d !== name));
         router.push('/dashboard');
     }, [router]);
 
@@ -97,6 +112,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
         onTaskCreate: handleAddTask,
         onTaskUpdate: handleUpdateTask,
         onSubtaskChange: handleSubtaskChange,
+        onTaskStart: handleTaskStart,
         onDivisionCreate: handleAddDivision,
         onDivisionUpdate: handleUpdateDivision,
         onDivisionDelete: handleDeleteDivision,
