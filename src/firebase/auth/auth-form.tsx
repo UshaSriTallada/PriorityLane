@@ -60,11 +60,11 @@ export default function AuthForm({ mode }: AuthFormProps) {
           await updateProfile(userCredential.user, { displayName: values.name });
         }
         toast({ title: 'Signup successful!', description: 'Redirecting to your dashboard...' });
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       } else {
         await signInWithEmailAndPassword(auth, values.email, values.password);
         toast({ title: 'Login successful!', description: 'Welcome back!' });
-        router.push('/dashboard');
+        window.location.href = '/dashboard';
       }
     } catch (error: any) {
       toast({
