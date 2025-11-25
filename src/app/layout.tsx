@@ -7,7 +7,7 @@ import { UserProvider } from '@/firebase/auth/use-user';
 
 export const metadata: Metadata = {
   title: 'PriorityLane',
-  description: 'Plan your day, manage your factory.',
+  description: 'Where clarity meets momentum.',
 };
 
 export default function RootLayout({
