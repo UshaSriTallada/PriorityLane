@@ -4,11 +4,6 @@ import DashboardClient from '@/components/dashboard-client';
 import { useDivisions } from '@/hooks/use-divisions';
 import { notFound } from 'next/navigation';
 
-interface DivisionDashboardPageProps {
-  params: { division: string };
-}
-
-
 export default function DivisionDashboardPage({ params }: { params: { division: string } }) {
     const { divisions } = useDivisions();
   
