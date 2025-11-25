@@ -22,5 +22,3 @@ PriorityLane is a modern, full-stack task management application designed to hel
 *   **Artificial Intelligence**: Google's Genkit for the intelligent task prioritization flow
 *   **State Management**: Custom React hooks for clean, centralized state management
 *   **Deployment**: Ready for free, zero-config deployment on Vercel
-
-This project was built collaboratively with the help of an AI coding partner in Firebase Studio.
