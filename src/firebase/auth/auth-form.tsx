@@ -139,14 +139,14 @@ export default function AuthForm({ mode }: AuthFormProps) {
             {mode === 'login' ? (
                 <>
                     Don't have an account?{' '}
-                    <Link href="/signup" className="underline">
+                    <Link href="/signup" className="underline text-primary">
                         Sign up
                     </Link>
                 </>
             ) : (
                 <>
                     Already have an account?{' '}
-                    <Link href="/login" className="underline">
+                    <Link href="/login" className="underline text-primary">
                         Login
                     </Link>
                 </>
