@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="mb-8 flex flex-col items-center">
             <Rocket className="h-12 w-12 text-primary mb-4" />
             <h1 className="text-3xl font-bold">PriorityLane</h1>
-            <p className="text-muted-foreground">Manage your factory floor with ease.</p>
+            <p className="text-muted-foreground">Plan your day, manage your factory.</p>
         </div>
         {children}
       </div>
