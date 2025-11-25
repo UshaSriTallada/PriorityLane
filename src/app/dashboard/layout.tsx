@@ -7,22 +7,71 @@ import {
   SidebarHeader,
   SidebarProvider,
   SidebarInset,
+  SidebarMenuSkeleton,
 } from '@/components/ui/sidebar';
-import { Factory } from 'lucide-react';
+import { Factory, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { StateProvider } from '@/hooks/use-state-manager';
 import { useUser } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
 import Header from '@/components/header';
 import { useMemo } from 'react';
 import { isPast } from 'date-fns';
 import { useStateManager } from '@/hooks/use-state-manager';
-
+import { Skeleton } from '@/components/ui/skeleton';
 
 function DashboardNav() {
     return <MainNav />;
+}
+
+function SkeletonDashboard() {
+    return (
+        <SidebarProvider>
+            <Sidebar>
+                <SidebarHeader>
+                    <div className="flex h-16 items-center border-b px-4 lg:h-[60px] lg:px-6">
+                        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
+                            <Factory className="h-6 w-6 text-primary" />
+                            <span className="group-data-[collapsible=icon]:hidden">FactoryFlow</span>
+                        </Link>
+                    </div>
+                </SidebarHeader>
+                <SidebarContent className="p-2">
+                   <div className="flex flex-col gap-4">
+                        <SidebarMenuSkeleton showIcon />
+                        <SidebarMenuSkeleton showIcon />
+                   </div>
+                   <div className="mt-4 flex flex-col gap-4">
+                        <Skeleton className="h-4 w-20" />
+                        <SidebarMenuSkeleton showIcon />
+                        <SidebarMenuSkeleton showIcon />
+                   </div>
+                </SidebarContent>
+            </Sidebar>
+            <SidebarInset>
+                <div className="flex h-screen flex-col">
+                    <Header overdueCount={0} />
+                    <main className="flex-1 p-4 md:p-6 lg:p-8">
+                         <div className="flex items-center justify-between mb-8">
+                            <div>
+                                <Skeleton className="h-8 w-64 mb-2" />
+                                <Skeleton className="h-4 w-96" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Skeleton className="h-10 w-40" />
+                                <Skeleton className="h-10 w-28" />
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                            <Skeleton className="h-[300px] w-full" />
+                            <Skeleton className="h-[300px] w-full" />
+                         </div>
+                    </main>
+                </div>
+            </SidebarInset>
+        </SidebarProvider>
+    )
 }
 
 function ProtectedDashboardLayout({ children }: { children: React.ReactNode }) {
@@ -75,11 +124,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }, [user, loading, router]);
 
     if (loading || !user) {
-        return (
-            <div className="flex h-screen w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SkeletonDashboard />;
     }
     
     return (
