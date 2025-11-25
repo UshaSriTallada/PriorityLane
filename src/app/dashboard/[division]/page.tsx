@@ -1,35 +1,18 @@
 
-'use client';
-import DashboardClient from '@/components/dashboard-client';
-import { useDivisions } from '@/hooks/use-divisions';
-import { notFound } from 'next/navigation';
+import DivisionDashboardClient from './division-dashboard-client';
 
 interface DivisionDashboardPageProps {
-    params: {
-        division: string;
-    };
+  params: {
+    division: string;
+  };
 }
 
+// This is now a Server Component. It fetches data or params on the server
+// and passes them down to a Client Component.
 export default function DivisionDashboardPage({ params }: DivisionDashboardPageProps) {
-    const { divisions } = useDivisions();
-  
-    const decodedDivision = decodeURIComponent(params.division);
+  const decodedDivision = decodeURIComponent(params.division);
 
-    const getDivisionDisplayName = (slug: string) => {
-        return divisions.find(d => d.toLowerCase() === slug) || slug;
-    }
-    
-    const divisionDisplayName = getDivisionDisplayName(decodedDivision);
-
-    // If the division doesn't exist in our state, show a 404 page.
-    // We also need to check if the divisions array has loaded yet.
-    if (divisions.length > 0 && !divisions.map(d => d.toLowerCase()).includes(decodedDivision)) {
-        notFound();
-    }
-
-    return (
-        <DashboardClient 
-            selectedDivision={divisionDisplayName}
-        />
-    );
+  return (
+    <DivisionDashboardClient divisionSlug={decodedDivision} />
+  );
 }
