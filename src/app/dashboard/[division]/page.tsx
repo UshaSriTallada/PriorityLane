@@ -20,13 +20,7 @@
 
 import DivisionDashboardClient from './division-dashboard-client';
 
-type Props = {
-  params: {
-    division: string;
-  };
-};
-
-export default function DivisionDashboardPage({ params }: Props) {
+export default function DivisionDashboardPage({ params }: any) {
   const decodedDivision = decodeURIComponent(params.division);
 
   return <DivisionDashboardClient divisionSlug={decodedDivision} />;
