@@ -86,6 +86,12 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       deadline: values.deadline.toISOString(),
       subtasks: subtasks
     };
+
+    // If the task was done but we added new subtasks, move it back to active.
+    if (updatedTask.doneAt && updatedTask.subtasks.length > task.subtasks.length) {
+      updatedTask.doneAt = undefined;
+    }
+
     onTaskUpdate(updatedTask);
   }
 
