@@ -8,7 +8,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, doc, writeBatch, where, query } from "firebase/firestore";
+import { collection, doc, writeBatch, where, query, deleteField } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useMemoFirebase } from "./use-memo-firebase";
@@ -80,15 +80,19 @@ export function StateProvider({ children }: { children: ReactNode }) {
     };
 
     const handleUpdateTask = async (updatedTask: Task) => {
-        const cleanTask: Partial<Task> = { ...updatedTask };
-        if (cleanTask.priority === undefined) {
-            delete cleanTask.priority;
-        }
-        if (cleanTask.priorityReason === undefined) {
-            delete cleanTask.priorityReason;
-        }
+        const updateData: { [key: string]: any } = { ...updatedTask };
 
-        await updateTask(updatedTask.id, cleanTask);
+        // Firestore cannot store `undefined`, so we convert them to `deleteField()`
+        for (const key in updateData) {
+            if (updateData[key] === undefined) {
+                updateData[key] = deleteField();
+            }
+        }
+        
+        // Remove id from the update data as it's the document key
+        delete updateData.id;
+
+        await updateTask(updatedTask.id, updateData);
         toast({
             title: "Task Updated",
             description: `"${updatedTask.name}" has been successfully updated.`,
@@ -123,18 +127,19 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
         const allSubtasksCompleted = updatedSubtasks.length > 0 && updatedSubtasks.every(st => st.completed);
         
-        let doneAt = task.doneAt;
+        const updateData: {subtasks: any[], doneAt?: any} = { subtasks: updatedSubtasks };
+
         if (allSubtasksCompleted && !task.doneAt) {
-            doneAt = new Date().toISOString();
+            updateData.doneAt = new Date().toISOString();
              toast({
                 title: "Task Completed!",
                 description: `"${task.name}" is now finished.`,
             });
         } else if (!allSubtasksCompleted && task.doneAt) {
-            doneAt = undefined;
+            updateData.doneAt = deleteField();
         }
 
-        await updateTask(taskId, { subtasks: updatedSubtasks, doneAt });
+        await updateTask(taskId, updateData);
     };
     
     const handleTaskStart = async (taskId: string) => {
