@@ -2,7 +2,7 @@
   "probes": [
     {
       "path": "/",
-      "mustContain": "FactoryFlow"
+      "mustContain": "PriorityLane"
     }
   ]
 }
