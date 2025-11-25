@@ -87,7 +87,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {mode === 'signup' && (
               <FormField
                 control={form.control}
@@ -129,7 +129,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {mode === 'login' ? 'Login' : 'Sign Up'}
             </Button>
