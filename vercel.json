@@ -1,8 +1,2 @@
 {
-  "probes": [
-    {
-      "path": "/",
-      "mustContain": "PriorityLane"
-    }
-  ]
 }
