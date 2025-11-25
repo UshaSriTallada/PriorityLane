@@ -9,7 +9,7 @@ interface DivisionDashboardPageProps {
 }
 
 
-export default function DivisionDashboardPage({ params }: DivisionDashboardPageProps) {
+export default function DivisionDashboardPage({ params }: { params: { division: string } }) {
     const { divisions } = useDivisions();
   
     const decodedDivision = decodeURIComponent(params.division);
@@ -21,7 +21,8 @@ export default function DivisionDashboardPage({ params }: DivisionDashboardPageP
     const divisionDisplayName = getDivisionDisplayName(decodedDivision);
 
     // If the division doesn't exist in our state, show a 404 page.
-    if (!divisions.map(d => d.toLowerCase()).includes(decodedDivision)) {
+    // We also need to check if the divisions array has loaded yet.
+    if (divisions.length > 0 && !divisions.map(d => d.toLowerCase()).includes(decodedDivision)) {
         notFound();
     }
 
