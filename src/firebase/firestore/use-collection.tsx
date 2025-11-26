@@ -13,6 +13,7 @@ import {
   DocumentData,
   CollectionReference,
   DocumentReference,
+  UpdateData,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { Task } from '@/types';
@@ -86,8 +87,8 @@ export function useCollection<T extends DocumentData>(
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!path) return;
-     const docRef = doc(firestore, path, docId) as DocumentReference<T>;
-     return updateDoc(docRef, updatedData).catch((serverError) => {
+     const docRef = doc(firestore, path, docId)as DocumentReference<T, T>;
+     return updateDoc(docRef, updatedData as UpdateData<T>).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'update',
