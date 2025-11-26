@@ -31,7 +31,7 @@ export function useCollection<T extends DocumentData>(
   options: UseCollectionOptions<T> = {}
 ) {
   const firestore = useFirestore();
-  const [data, setData] = useState<T[]>([]);
+  const [data, setData] = useState<(T & { id: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -48,9 +48,9 @@ export function useCollection<T extends DocumentData>(
       collectionQuery,
       (snapshot) => {
         const newData = snapshot.docs.map((doc) => ({
-          id: doc.id,
           ...doc.data(),
-        })) as T[];
+          id: doc.id,
+        })) as (T & { id: string })[];
         setData(newData);
         setLoading(false);
         setError(null);
@@ -87,7 +87,7 @@ export function useCollection<T extends DocumentData>(
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!path) return;
-     const docRef = doc(firestore, path, docId)as DocumentReference<T, T>;
+     const docRef = doc(firestore, path, docId) as DocumentReference<T>;
      return updateDoc(docRef, updatedData as UpdateData<T>).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,

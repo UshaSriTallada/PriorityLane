@@ -8,7 +8,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, doc, writeBatch, where, query, deleteField, FieldValue } from "firebase/firestore";
+import { collection, doc, writeBatch, where, query, deleteField, FieldValue, Query, DocumentData } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useMemoFirebase } from "./use-memo-firebase";
@@ -68,7 +68,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
     const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(
       user ? tasksPath : null,
-      tasksQuery, 
+      tasksQuery as Query<Task>, 
       {
         orderBy: 'order',
         listen: true,
@@ -80,10 +80,10 @@ export function StateProvider({ children }: { children: ReactNode }) {
         divisionsPath ? query(collection(firestore, divisionsPath)) : null,
         [divisionsPath, firestore]
     );
-
-    const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<{name: string}>(
+    type DivisionDoc = { name: string };
+    const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<DivisionDoc>(
         divisionsPath,
-        divisionsQuery
+        divisionsQuery as Query<DivisionDoc>
     );
     
     const divisions = divisionsData.map(d => d.name as Task['division']);
