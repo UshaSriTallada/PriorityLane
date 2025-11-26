@@ -59,11 +59,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
   const { divisions } = useDivisions();
   
   const form = useForm<z.infer<typeof taskSchema>>({
-    resolver: zodResolver(taskSchema.extend({
-        division: z.enum((divisions.length > 0 ? divisions : ['']) as [string, ...string[]], {
-            errorMap: () => ({ message: "Please select a division." }),
-        })
-    })),
+    resolver: zodResolver(taskSchema),
     defaultValues: {
       name: "",
       description: "",
@@ -172,7 +168,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select impact level" />
-                        </SelectTrigger>
+                        </Trigger>
                       </FormControl>
                       <SelectContent>
                         {impacts.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}

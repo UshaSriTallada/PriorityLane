@@ -62,11 +62,7 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
   const [subtasks, setSubtasks] = useState<Subtask[]>(task.subtasks);
 
   const form = useForm<z.infer<typeof taskSchema>>({
-    resolver: zodResolver(taskSchema.extend({
-        division: z.enum(divisions as [string, ...string[]], {
-            errorMap: () => ({ message: "Please select a division." }),
-        })
-    })),
+    resolver: zodResolver(taskSchema),
     defaultValues: {
       name: task.name,
       description: task.description,
