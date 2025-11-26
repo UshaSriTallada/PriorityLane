@@ -43,7 +43,7 @@ function cleanForFirestore(obj: any): any {
                 const value = obj[key];
                 if (value === undefined) {
                     newObj[key] = deleteField();
-                } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                } else if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date) && !(value instanceof FieldValue)) {
                     newObj[key] = cleanForFirestore(value);
                 }
                 else {
@@ -55,6 +55,8 @@ function cleanForFirestore(obj: any): any {
     }
     return obj;
 }
+
+type DivisionDoc = { name: string; id: string };
 
 export function StateProvider({ children }: { children: ReactNode }) {
     const { user } = useUser();
@@ -71,14 +73,9 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
     const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(
       user ? tasksPath : null,
-      tasksQuery, 
-      {
-        orderBy: 'order',
-        listen: true,
-      }
+      tasksQuery
     );
     
-    type DivisionDoc = { name: string; id: string };
     const divisionsPath = user ? `users/${user.uid}/divisions` : null;
     const divisionsQuery = useMemoFirebase(() => 
         divisionsPath ? query(collection(firestore, divisionsPath)) as Query<DivisionDoc> : null,
@@ -148,7 +145,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
                 return { 
                     ...sub, 
                     completed,
-                    completedAt: completed ? new Date().toISOString() : undefined,
+                    completedAt: completed ? new Date().toISOString() : deleteField(),
                  };
             }
             return sub;
@@ -168,7 +165,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
             updateData.doneAt = deleteField();
         }
 
-        await updateTask(taskId, cleanForFirestore(updateData));
+        await updateTask(taskId, updateData);
     };
     
     const handleTaskStart = async (taskId: string) => {
@@ -311,5 +308,7 @@ export function useStateManager() {
     }
     return context;
 }
+
+    
 
     
