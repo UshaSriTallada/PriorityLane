@@ -56,7 +56,7 @@ function cleanForFirestore(obj: any): any {
     return obj;
 }
 
-type DivisionDoc = { name: string; id: string };
+type DivisionDoc = { name: string; id: string; };
 
 export function StateProvider({ children }: { children: ReactNode }) {
     const { user } = useUser();
@@ -142,11 +142,21 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
         const updatedSubtasks = task.subtasks.map(sub => {
             if (sub.id === subtaskId) {
-                return { 
-                    ...sub, 
-                    completed,
-                    completedAt: completed ? new Date().toISOString() : deleteField(),
-                 };
+                if (completed) {
+                    return { 
+                        ...sub, 
+                        completed: true,
+                        completedAt: new Date().toISOString(),
+                    };
+                } else {
+                    // When unchecking, create a new object without the completedAt property.
+                    // Do NOT use deleteField() inside an array.
+                    const { completedAt, ...rest } = sub;
+                    return {
+                        ...rest,
+                        completed: false
+                    };
+                }
             }
             return sub;
         });
@@ -308,7 +318,3 @@ export function useStateManager() {
     }
     return context;
 }
-
-    
-
-    
