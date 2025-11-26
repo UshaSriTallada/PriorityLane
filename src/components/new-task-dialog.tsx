@@ -40,7 +40,7 @@ import { format } from "date-fns";
 import type { Task } from "@/types";
 import { useDivisions } from "@/hooks/use-divisions";
 
-const impacts: Task['impact'][] = ['High', 'Medium', 'Low'];
+const impacts = ['High', 'Medium', 'Low'] as const;
 
 const taskSchema = z.object({
   name: z.string().min(3, { message: "Task name must be at least 3 characters." }),
