@@ -43,8 +43,11 @@ function cleanForFirestore(obj: any): any {
                 const value = obj[key];
                 if (value === undefined) {
                     newObj[key] = deleteField();
-                } else {
+                } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
                     newObj[key] = cleanForFirestore(value);
+                }
+                else {
+                    newObj[key] = value;
                 }
             }
         }
@@ -62,7 +65,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
     // Firestore data hooks
     const tasksPath = 'tasks';
     const tasksQuery = useMemoFirebase(() => 
-        user ? query(collection(firestore, tasksPath), where('userId', '==', user.uid)) : null,
+        user ? query(collection(firestore, tasksPath), where('userId', '==', user.uid)) as Query<Task> : null,
         [user, firestore]
     );
 
@@ -74,13 +77,14 @@ export function StateProvider({ children }: { children: ReactNode }) {
         listen: true,
       }
     );
-
+    
+    type DivisionDoc = { name: string; id: string };
     const divisionsPath = user ? `users/${user.uid}/divisions` : null;
     const divisionsQuery = useMemoFirebase(() => 
-        divisionsPath ? query(collection(firestore, divisionsPath)) : null,
+        divisionsPath ? query(collection(firestore, divisionsPath)) as Query<DivisionDoc> : null,
         [divisionsPath, firestore]
     );
-    type DivisionDoc = { name: string; id: string };
+
     const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<DivisionDoc>(
         divisionsPath,
         divisionsQuery
@@ -197,7 +201,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
     const handleAddDivision = useCallback(async (name: string) => {
         if (!user) return;
         if (!divisions.find(d => d.toLowerCase() === name.toLowerCase())) {
-            await addDivisionDoc({ name });
+            await addDivisionDoc({ name } as DivisionDoc);
         }
     }, [user, divisions, addDivisionDoc]);
 
@@ -307,3 +311,5 @@ export function useStateManager() {
     }
     return context;
 }
+
+    
