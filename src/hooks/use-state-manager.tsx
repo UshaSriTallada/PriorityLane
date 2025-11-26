@@ -68,7 +68,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
 
     const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(
       user ? tasksPath : null,
-      tasksQuery as Query<Task>, 
+      tasksQuery, 
       {
         orderBy: 'order',
         listen: true,
@@ -80,10 +80,10 @@ export function StateProvider({ children }: { children: ReactNode }) {
         divisionsPath ? query(collection(firestore, divisionsPath)) : null,
         [divisionsPath, firestore]
     );
-    type DivisionDoc = { name: string };
+    type DivisionDoc = { name: string; id: string };
     const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<DivisionDoc>(
         divisionsPath,
-        divisionsQuery as Query<DivisionDoc>
+        divisionsQuery
     );
     
     const divisions = divisionsData.map(d => d.name as Task['division']);
@@ -164,7 +164,7 @@ export function StateProvider({ children }: { children: ReactNode }) {
             updateData.doneAt = deleteField();
         }
 
-        await updateTask(taskId, updateData);
+        await updateTask(taskId, cleanForFirestore(updateData));
     };
     
     const handleTaskStart = async (taskId: string) => {

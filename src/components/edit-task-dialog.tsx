@@ -83,8 +83,9 @@ export function EditTaskDialog({ task, onTaskUpdate, onOpenChange }: EditTaskDia
       subtasks: subtasks
     };
 
-    // If the task was done but we added new subtasks, move it back to active.
-    if (updatedTask.doneAt && subtasks.length > task.subtasks.length && subtasks.some(st => !st.completed)) {
+    // If the task was done but we added new, uncompleted subtasks, move it back to active.
+    const hasNewIncompleteSubtasks = subtasks.length > task.subtasks.length && subtasks.some(st => !st.completed);
+    if (updatedTask.doneAt && hasNewIncompleteSubtasks) {
       updatedTask.doneAt = undefined;
     }
 
