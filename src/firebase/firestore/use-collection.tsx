@@ -69,21 +69,23 @@ export function useCollection<T extends DocumentData>(
 
   const add = async (newData: Omit<T, 'id'>) => {
     if (!path) return;
-    addDoc(collection(firestore, path), newData).catch((serverError) => {
+    const collRef = collection(firestore, path);
+    return addDoc(collRef, newData).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
-        path,
+        path: path,
         operation: 'create',
         requestResourceData: newData,
       }, serverError);
       errorEmitter.emit('permission-error', permissionError);
       setError(permissionError);
+      throw permissionError; // Re-throw the error so the caller knows it failed
     });
   };
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!path) return;
      const docRef = doc(firestore, path, docId);
-     updateDoc(docRef, updatedData).catch((serverError) => {
+     return updateDoc(docRef, updatedData).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'update',
@@ -91,19 +93,21 @@ export function useCollection<T extends DocumentData>(
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
         setError(permissionError);
+        throw permissionError;
      });
   };
 
   const remove = async (docId: string) => {
      if (!path) return;
     const docRef = doc(firestore, path, docId);
-    deleteDoc(docRef).catch((serverError) => {
+    return deleteDoc(docRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'delete',
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
         setError(permissionError);
+        throw permissionError;
     });
   };
   
@@ -115,7 +119,7 @@ export function useCollection<T extends DocumentData>(
       batch.update(docRef, { order: index });
     });
     
-    batch.commit().catch((serverError) => {
+    return batch.commit().catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: 'tasks', // This is a batch, path is more general
             operation: 'update',
@@ -123,6 +127,7 @@ export function useCollection<T extends DocumentData>(
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
         setError(permissionError);
+        throw permissionError;
     });
   };
 
