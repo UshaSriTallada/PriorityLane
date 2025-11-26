@@ -8,7 +8,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useUser } from "@/firebase";
 import { useFirestore } from "@/firebase/provider";
-import { collection, doc, writeBatch, where, query, deleteField } from "firebase/firestore";
+import { collection, doc, writeBatch, where, query, deleteField, FieldValue } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { useMemoFirebase } from "./use-memo-firebase";
@@ -30,6 +30,28 @@ interface StateContextType {
 }
 
 const StateContext = createContext<StateContextType | undefined>(undefined);
+
+// Recursively clean an object to remove 'undefined' fields, replacing them with deleteField() for Firestore.
+function cleanForFirestore(obj: any): any {
+    if (Array.isArray(obj)) {
+        return obj.map(item => cleanForFirestore(item));
+    }
+    if (obj !== null && typeof obj === 'object') {
+        const newObj: { [key: string]: any } = {};
+        for (const key in obj) {
+            if (Object.prototype.hasOwnProperty.call(obj, key)) {
+                const value = obj[key];
+                if (value === undefined) {
+                    newObj[key] = deleteField();
+                } else {
+                    newObj[key] = cleanForFirestore(value);
+                }
+            }
+        }
+        return newObj;
+    }
+    return obj;
+}
 
 export function StateProvider({ children }: { children: ReactNode }) {
     const { user } = useUser();
@@ -89,14 +111,8 @@ export function StateProvider({ children }: { children: ReactNode }) {
     };
 
     const handleUpdateTask = async (updatedTask: Task) => {
-        const updateData: { [key: string]: any } = { ...updatedTask };
-
-        // Firestore cannot store `undefined`, so we convert them to `deleteField()`
-        for (const key in updateData) {
-            if (updateData[key] === undefined) {
-                updateData[key] = deleteField();
-            }
-        }
+        // Deep clean the object for Firestore, removing 'undefined' values recursively
+        const updateData = cleanForFirestore({ ...updatedTask });
         
         // Remove id from the update data as it's the document key
         delete updateData.id;
@@ -291,5 +307,3 @@ export function useStateManager() {
     }
     return context;
 }
-
-    
