@@ -169,7 +169,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select impact level" />
-                        </Trigger>
+                        </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         {impacts.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}
