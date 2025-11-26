@@ -38,22 +38,31 @@ export function StateProvider({ children }: { children: ReactNode }) {
     const { toast } = useToast();
 
     // Firestore data hooks
+    const tasksPath = 'tasks';
     const tasksQuery = useMemoFirebase(() => 
-        user ? query(collection(firestore, 'tasks'), where('userId', '==', user.uid)) : null,
+        user ? query(collection(firestore, tasksPath), where('userId', '==', user.uid)) : null,
         [user, firestore]
     );
 
-    const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(tasksQuery, {
-      orderBy: 'order',
-      listen: true,
-    });
+    const { data: tasks = [], loading: tasksLoading, add: addTask, update: updateTask, remove: removeTask, reorder: reorderTasks } = useCollection<Task>(
+      user ? tasksPath : null,
+      tasksQuery, 
+      {
+        orderBy: 'order',
+        listen: true,
+      }
+    );
 
+    const divisionsPath = user ? `users/${user.uid}/divisions` : null;
     const divisionsQuery = useMemoFirebase(() => 
-        user ? query(collection(firestore, 'users', user.uid, 'divisions')) : null,
-        [user, firestore]
+        divisionsPath ? query(collection(firestore, divisionsPath)) : null,
+        [divisionsPath, firestore]
     );
 
-    const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<{name: string}>(divisionsQuery);
+    const { data: divisionsData = [], add: addDivisionDoc, remove: removeDivisionDoc } = useCollection<{name: string}>(
+        divisionsPath,
+        divisionsQuery
+    );
     
     const divisions = divisionsData.map(d => d.name as Task['division']);
 

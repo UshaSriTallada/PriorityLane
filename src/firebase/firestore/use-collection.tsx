@@ -11,6 +11,7 @@ import {
   writeBatch,
   Query,
   DocumentData,
+  CollectionReference,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { Task } from '@/types';
@@ -23,6 +24,7 @@ interface UseCollectionOptions<T> {
 }
 
 export function useCollection<T extends DocumentData>(
+  path: string | null,
   collectionQuery: Query<T> | null,
   options: UseCollectionOptions<T> = {}
 ) {
@@ -32,7 +34,7 @@ export function useCollection<T extends DocumentData>(
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    if (!collectionQuery) {
+    if (!collectionQuery || !path) {
         setData([]);
         setLoading(false);
         return;
@@ -52,8 +54,6 @@ export function useCollection<T extends DocumentData>(
         setError(null);
       },
       (err) => {
-        // Safely get the path from the public query API
-        const path = collectionQuery.path;
         const permissionError = new FirestorePermissionError({
           path: path,
           operation: 'list'
@@ -65,11 +65,10 @@ export function useCollection<T extends DocumentData>(
     );
 
     return () => unsubscribe();
-  }, [collectionQuery]);
+  }, [collectionQuery, path]);
 
   const add = async (newData: Omit<T, 'id'>) => {
-    if (!collectionQuery) return;
-    const path = collectionQuery.path;
+    if (!path) return;
     addDoc(collection(firestore, path), newData).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path,
@@ -82,8 +81,7 @@ export function useCollection<T extends DocumentData>(
   };
 
   const update = async (docId: string, updatedData: Partial<T>) => {
-     if (!collectionQuery) return;
-     const path = collectionQuery.path;
+     if (!path) return;
      const docRef = doc(firestore, path, docId);
      updateDoc(docRef, updatedData).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -97,8 +95,7 @@ export function useCollection<T extends DocumentData>(
   };
 
   const remove = async (docId: string) => {
-     if (!collectionQuery) return;
-    const path = collectionQuery.path;
+     if (!path) return;
     const docRef = doc(firestore, path, docId);
     deleteDoc(docRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -111,7 +108,7 @@ export function useCollection<T extends DocumentData>(
   };
   
   const reorder = async (reorderedTasks: Task[]) => {
-    if (!collectionQuery) return;
+    if (!path || path !== 'tasks') return; // Ensure this only runs for tasks
     const batch = writeBatch(firestore);
     reorderedTasks.forEach((task, index) => {
       const docRef = doc(firestore, "tasks", task.id);
