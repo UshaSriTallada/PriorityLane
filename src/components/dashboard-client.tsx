@@ -187,7 +187,6 @@ export default function DashboardClient({ selectedDivision, filter = 'active' }:
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
-            disabled={isDndDisabled}
           >
             <SortableContext items={visibleTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
                <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
