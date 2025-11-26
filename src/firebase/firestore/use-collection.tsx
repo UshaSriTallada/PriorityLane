@@ -12,6 +12,7 @@ import {
   Query,
   DocumentData,
   CollectionReference,
+  DocumentReference,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import type { Task } from '@/types';
@@ -54,12 +55,14 @@ export function useCollection<T extends DocumentData>(
         setError(null);
       },
       (err) => {
-        const permissionError = new FirestorePermissionError({
-          path: path,
-          operation: 'list'
-        }, err);
-        errorEmitter.emit('permission-error', permissionError);
-        setError(permissionError);
+        if (path) {
+          const permissionError = new FirestorePermissionError({
+            path: path,
+            operation: 'list'
+          }, err);
+          errorEmitter.emit('permission-error', permissionError);
+          setError(permissionError);
+        }
         setLoading(false);
       }
     );
@@ -69,7 +72,7 @@ export function useCollection<T extends DocumentData>(
 
   const add = async (newData: Omit<T, 'id'>) => {
     if (!path) return;
-    const collRef = collection(firestore, path);
+    const collRef = collection(firestore, path) as CollectionReference<Omit<T, 'id'>>;
     return addDoc(collRef, newData).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path: path,
@@ -77,14 +80,13 @@ export function useCollection<T extends DocumentData>(
         requestResourceData: newData,
       }, serverError);
       errorEmitter.emit('permission-error', permissionError);
-      setError(permissionError);
       throw permissionError; // Re-throw the error so the caller knows it failed
     });
   };
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!path) return;
-     const docRef = doc(firestore, path, docId);
+     const docRef = doc(firestore, path, docId) as DocumentReference<T>;
      return updateDoc(docRef, updatedData).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
@@ -92,21 +94,19 @@ export function useCollection<T extends DocumentData>(
             requestResourceData: updatedData,
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
-        setError(permissionError);
         throw permissionError;
      });
   };
 
   const remove = async (docId: string) => {
      if (!path) return;
-    const docRef = doc(firestore, path, docId);
+    const docRef = doc(firestore, path, docId) as DocumentReference<T>;
     return deleteDoc(docRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
             path: docRef.path,
             operation: 'delete',
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
-        setError(permissionError);
         throw permissionError;
     });
   };
@@ -126,7 +126,6 @@ export function useCollection<T extends DocumentData>(
             requestResourceData: { info: "Batch reorder operation" }
         }, serverError);
         errorEmitter.emit('permission-error', permissionError);
-        setError(permissionError);
         throw permissionError;
     });
   };
