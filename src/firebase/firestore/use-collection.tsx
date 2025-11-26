@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -51,9 +52,10 @@ export function useCollection<T extends DocumentData>(
         setError(null);
       },
       (err) => {
-        const collectionRef = collectionQuery.withConverter(null)._query.path;
+        // Safely get the path from the public query API
+        const path = collectionQuery.path;
         const permissionError = new FirestorePermissionError({
-          path: collectionRef.segments.join('/'),
+          path: path,
           operation: 'list'
         }, err);
         errorEmitter.emit('permission-error', permissionError);
@@ -67,8 +69,7 @@ export function useCollection<T extends DocumentData>(
 
   const add = async (newData: Omit<T, 'id'>) => {
     if (!collectionQuery) return;
-    const collectionRef = collectionQuery.withConverter(null)._query.path;
-    const path = collectionRef.segments.join('/');
+    const path = collectionQuery.path;
     addDoc(collection(firestore, path), newData).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path,
@@ -82,8 +83,7 @@ export function useCollection<T extends DocumentData>(
 
   const update = async (docId: string, updatedData: Partial<T>) => {
      if (!collectionQuery) return;
-     const collectionRef = collectionQuery.withConverter(null)._query.path;
-     const path = collectionRef.segments.join('/');
+     const path = collectionQuery.path;
      const docRef = doc(firestore, path, docId);
      updateDoc(docRef, updatedData).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
@@ -98,8 +98,7 @@ export function useCollection<T extends DocumentData>(
 
   const remove = async (docId: string) => {
      if (!collectionQuery) return;
-    const collectionRef = collectionQuery.withConverter(null)._query.path;
-    const path = collectionRef.segments.join('/');
+    const path = collectionQuery.path;
     const docRef = doc(firestore, path, docId);
     deleteDoc(docRef).catch((serverError) => {
         const permissionError = new FirestorePermissionError({
