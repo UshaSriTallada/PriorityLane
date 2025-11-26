@@ -68,7 +68,7 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
     },
   });
 
-  // Keep defaultValues in sync with divisions
+  // Keep defaultValues in sync with divisions and reset form when dialog opens
   useEffect(() => {
     if (open) {
         form.reset({
