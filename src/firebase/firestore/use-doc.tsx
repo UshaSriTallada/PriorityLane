@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import {
@@ -8,6 +9,7 @@ import {
   deleteDoc,
   DocumentReference,
   DocumentData,
+  UpdateData,
 } from 'firebase/firestore';
 import { useFirestore } from '../provider';
 import { errorEmitter } from '@/firebase/error-emitter';
@@ -61,7 +63,8 @@ export function useDoc<T extends DocumentData>(
 
   const set = async (newData: T, options?: { merge?: boolean }) => {
     if (!docRef) return;
-    setDoc(docRef, newData, { merge: options?.merge }).catch((serverError) => {
+    // Cast the docRef to the specific generic type T to satisfy setDoc's signature.
+    return setDoc(docRef as DocumentReference<T>, newData, { merge: options?.merge }).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path: docRef.path,
         operation: options?.merge ? 'update' : 'create',
@@ -69,12 +72,13 @@ export function useDoc<T extends DocumentData>(
       }, serverError);
       errorEmitter.emit('permission-error', permissionError);
       setError(permissionError);
+      throw permissionError;
     });
   };
 
-  const update = async (updatedData: Partial<T>) => {
+  const update = async (updatedData: UpdateData<T>) => {
     if (!docRef) return;
-    updateDoc(docRef, updatedData).catch((serverError) => {
+    return updateDoc(docRef, updatedData).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path: docRef.path,
         operation: 'update',
@@ -82,18 +86,20 @@ export function useDoc<T extends DocumentData>(
       }, serverError);
       errorEmitter.emit('permission-error', permissionError);
       setError(permissionError);
+      throw permissionError;
     });
   };
 
   const remove = async () => {
     if (!docRef) return;
-    deleteDoc(docRef).catch((serverError) => {
+    return deleteDoc(docRef).catch((serverError) => {
       const permissionError = new FirestorePermissionError({
         path: docRef.path,
         operation: 'delete',
       }, serverError);
       errorEmitter.emit('permission-error', permissionError);
       setError(permissionError);
+      throw permissionError;
     });
   };
 
