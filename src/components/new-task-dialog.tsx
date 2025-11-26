@@ -68,7 +68,8 @@ export function NewTaskDialog({ onTaskCreate }: NewTaskDialogProps) {
     },
   });
 
-  // Keep defaultValues in sync with divisions and reset form when dialog opens
+  // This useEffect hook must be at the top level.
+  // It resets the form whenever the dialog is opened or the divisions change.
   useEffect(() => {
     if (open) {
         form.reset({
